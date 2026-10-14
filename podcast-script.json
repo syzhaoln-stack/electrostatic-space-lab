@@ -1,0 +1,52 @@
+[
+  {
+    "speaker": "学习者",
+    "text": "我把电场箭头指向目标，电子怎么往另一边偏？",
+    "voice": "zh_female_vv_uranus_bigtts"
+  },
+  {
+    "speaker": "物理同伴",
+    "text": "先暂停。箭头表示正电荷的受力方向，电子带负电，它的受力方向正好相反。",
+    "voice": "zh_male_m191_uranus_bigtts"
+  },
+  {
+    "speaker": "学习者",
+    "text": "那把箭头反过来，电子就沿着它走？",
+    "voice": "zh_female_vv_uranus_bigtts"
+  },
+  {
+    "speaker": "物理同伴",
+    "text": "还要看它原来的速度。电场改变速度，轨迹得一步一步积累。看看受力箭头和速度箭头，它们现在同向吗？",
+    "voice": "zh_male_m191_uranus_bigtts"
+  },
+  {
+    "speaker": "学习者",
+    "text": "不一样！我刚才只顾着对准目标了。",
+    "voice": "zh_female_vv_uranus_bigtts"
+  },
+  {
+    "speaker": "物理同伴",
+    "text": "现在只提高发射速度，场保持不变。先猜落点，再发射。",
+    "voice": "zh_male_m191_uranus_bigtts"
+  },
+  {
+    "speaker": "学习者",
+    "text": "它经过这片区域更快了，所以受到的影响时间也变了。",
+    "voice": "zh_female_vv_uranus_bigtts"
+  },
+  {
+    "speaker": "物理同伴",
+    "text": "对。再旋转视角：正面看着到位，深度方向也到位了吗？",
+    "voice": "zh_male_m191_uranus_bigtts"
+  },
+  {
+    "speaker": "学习者",
+    "text": "还差一截！我要操纵的是整个空间里的轨迹。",
+    "voice": "zh_female_vv_uranus_bigtts"
+  },
+  {
+    "speaker": "物理同伴",
+    "text": "这也是电子束控制的核心问题。现在换你来：只改一个源电荷，让下一次更接近目标。",
+    "voice": "zh_male_m191_uranus_bigtts"
+  }
+]
