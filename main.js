@@ -1,14 +1,14 @@
 const PAGES={
- 'particle':{file:'index.html',name:'粒子操控',tag:'01 / PARTICLE CONTROL',title:'让看不见的场，改变可见的去向。',intro:'调整源电荷，操纵一个电子的空间轨迹。<br><strong>先预测，再发射，让落点回答你。</strong>'},
- 'field':{file:'field.html',name:'场的叠加',tag:'02 / FIELD WORKSHOP',title:'空间里的每一点，都有答案。',intro:'放下探针，拆开每个电荷的贡献。<br><strong>一个电场，来自整个空间中的源。</strong>'},
- 'slice':{file:'slice.html',name:'三维与切片',tag:'03 / SPATIAL SLICES',title:'教材上的那张图，藏在空间里。',intro:'移动一个面，把三维数据带到二维。<br><strong>发现图里看不到的那个方向。</strong>'},
- 'flux':{file:'flux.html',name:'高斯通量',tag:'04 / GAUSS LAB',title:'形状变了，什么没有变？',intro:'拉伸一个封闭面，数一数穿入与穿出。<br><strong>局部的变化，怎样服从整体的约束。</strong>'},
- 'wall':{file:'cases.html',name:'事故与应用',tag:'05 / CASE WALL',title:'同一种物理，走向不同的结果。',intro:'从真实事故、工程应用与风险场景出发。<br><strong>先看证据，再寻找背后的电场。</strong>'},
- 'analysis':{file:'analysis.html',name:'5W2H 分析',tag:'06 / SYSTEM ANALYSIS',title:'沿着问题，把系统拆开。',intro:'一件事，七个追问，一条可以干预的因果链。<br><strong>用物理解释结果，也说明判断的边界。</strong>'}
+ 'particle':{file:'index.html',name:'电场与运动',tag:'01 / 电场力怎样改变运动',title:'电子为什么转弯？',intro:'想把电子送到指定位置，需要改变什么？<br><strong>先看轨迹，再逐点看它受到的力。</strong>'},
+ 'field':{file:'field.html',name:'电场的叠加',tag:'02 / 两个源怎样共同作用',title:'两个电荷，怎样作用于同一点？',intro:'为了预测放在这里的电荷会怎样受力。<br><strong>沿虚线看每个源的贡献，再把它们相加。</strong>'},
+ 'slice':{file:'slice.html',name:'电势与等势面',tag:'03 / 用电势描述能量变化',title:'电势读数，代表什么？',intro:'先理解两点之间的能量差，再认识等势面。<br><strong>零点可以换，电势差与电场不变。</strong>'},
+ 'flux':{file:'flux.html',name:'电通量与高斯定理',tag:'04 / 从局部作用到整体关系',title:'包住电荷，能读出什么？',intro:'能从外围的电场，判断里面有多少净电荷吗？<br><strong>把包围面上朝外、朝内的贡献合起来。</strong>'},
+ 'wall':{file:'cases.html',name:'真实事故与应用',tag:'05 / 从现场照片理解物理',title:'先看发生了什么，再追问为什么。',intro:'从照片进入具体事件，对照过程模型。<br><strong>事件、仿真与 5W2H 在同一个案例里。</strong>'},
+ 'analysis':{file:'analysis.html',name:'案例分析',tag:'05 / 回到具体事件',title:'对着这个案例，逐个追问。',intro:'照片、事件过程、仿真与分析放在一起。<br><strong>每个答案都对应这个案例的证据。</strong>'}
 };
 const key=document.body.dataset.page||'particle',page=PAGES[key]||PAGES.particle;
 document.title=`${page.name} · 静电场空间实验室`;
-document.querySelector('#app').innerHTML=`<header class="topbar"><a href="index.html" class="brand"><span class="brand-mark" aria-hidden="true"></span><span>静电场 <span style="font-weight:400;opacity:.55">/</span> 空间实验室</span></a><div class="top-note">大学物理 JC05 · OBSERVE / CHANGE / UNDERSTAND</div></header><nav class="nav" aria-label="学习空间">${Object.entries(PAGES).map(([k,p],i)=>`<a href="${p.file}" ${k===key?'class="current" aria-current="page"':''}><span>0${i+1}</span>${p.name}</a>`).join('')}</nav><main><div class="page-intro"><div><div class="eyebrow">${page.tag}</div><h1>${page.title}</h1></div><p class="intro-copy">${page.intro}</p></div><div id="experience"><div class="status">正在准备实验空间…</div></div><div id="dialogue-area"></div></main><footer class="footer"><span>静电场空间实验室 · 首期交互样板<br>看见空间，改变输入，解释结果。</span><span><a href="https://openstax.org/books/university-physics-volume-2/pages/5-introduction" target="_blank" rel="noopener">公开教材依据 ↗</a>　·　<a href="https://www.youtube.com/watch?v=-Rb9guSEeVE" target="_blank" rel="noopener">三维表达参考 ↗</a><br>装置为教学理想模型；事故页面分别标注事实、推断与未知。</span></footer>`;
+document.querySelector('#app').innerHTML=`<header class="topbar"><a href="index.html" class="brand"><span class="brand-mark" aria-hidden="true"></span><span>静电场 <span style="font-weight:400;opacity:.55">/</span> 空间实验室</span></a><div class="top-note">大学物理 JC05 · 看现象 / 学概念 / 找证据</div></header><nav class="nav" aria-label="学习内容">${Object.entries(PAGES).filter(([k])=>k!=='analysis').map(([k,p],i)=>`<a href="${p.file}" ${k===key||(key==='analysis'&&k==='wall')?'class="current" aria-current="page"':''}><span>0${i+1}</span>${p.name}</a>`).join('')}</nav><main><div class="page-intro"><div><div class="eyebrow">${page.tag}</div><h1>${page.title}</h1></div><p class="intro-copy">${page.intro}</p></div><div id="experience"><div class="status">正在准备实验空间…</div></div><div id="dialogue-area"></div></main><footer class="footer"><span>静电场空间实验室 · 概念与证据<br>看现象，解释变化，再用证据判断。</span><span><a href="https://openstax.org/books/university-physics-volume-2/pages/5-introduction" target="_blank" rel="noopener">公开教材依据 ↗</a>　·　<a href="https://www.youtube.com/watch?v=-Rb9guSEeVE" target="_blank" rel="noopener">三维表达参考 ↗</a><br>模型与现场资料分开标注；未知信息不补成事实。</span></footer>`;
 const container=document.querySelector('#experience');
 try{
  let dispose;

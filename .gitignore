@@ -1,6 +1,7 @@
 dist/
 .playwright-cli/
 *.png
+!assets/cases/*.png
 qa-*.cjs
 media/podcast-production/
 media/*.wav
