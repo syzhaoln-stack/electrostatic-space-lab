@@ -59,3 +59,17 @@
 https://www.youtube.com/watch?v=81QNyDnYtg0 为3Blue1Brown《Simulating the electric field and a moving charge》，已从YouTube可见页面核对标题、作者及它链接到aXRTczANuIs的关系。播放器播放/截图控制未稳定完成，不声称完整观看。用户随后提供aXRTczANuIs 0:39画面截图作为直接视觉依据：纯黑背景、低机位XZ水平采样面、竖直蓝色矢量的透视阵列、珊瑚红源和少量细轴。
 
 官方原动画源路径现为 https://github.com/3b1b/videos/blob/master/_2023/optics_puzzles/e_field.py 与 objects.py；旧barber_pole源路径失效。根据源码核对固定采样箭头原地更新、弱场淡出、先整体后局部和脉冲之间的停顿。本站是独立实现，保留每个模型的物理适用边界。
+
+## 第四版补充：运动点电荷与网页发布
+
+完整迟滞场依据 UVa Michael Fowler 的课程：
+https://galileoandeinstein.phys.virginia.edu/Elec_Mag/2022_Lectures/EM_67_Lienard_Weichert.html
+
+视觉取舍再次参考作者公开的 e_field.py，规则取样、克制箭长、弱场明度变化，而非大量移动线纹：
+https://github.com/3b1b/videos/blob/master/_2023/optics_puzzles/e_field.py
+
+发布迁至 GitHub Pages，本地资源由 Node 静态服务启动。GitHub官方自定义发布说明：
+https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages
+
+### 加速与动能
+OpenStax University Physics Volume 2 §7.2：电势差、电势能、电子伏与电子枪。https://openstax.org/books/university-physics-volume-2/pages/7-2-electric-potential-and-potential-difference 。本项目束流关卡区分受力改变方向和电场做功改变动能，静态无其他功时 ΔK=−qΔV；电子朝较高V运动可获得动能。

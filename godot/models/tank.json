@@ -1,0 +1,95 @@
+{
+  "dimensions_m": {
+    "tank_radius": 1.45,
+    "shell_bottom_y": 0.24,
+    "shell_top_y": 3.12,
+    "roof_apex_y": 3.4
+  },
+  "cutaway_hide": [
+    "tank_front",
+    "tank_roof_front"
+  ],
+  "liquid_surface_y": 1.315,
+  "emission": [
+    0.69,
+    0.71,
+    0.3
+  ],
+  "float_center": [
+    0.18,
+    1.35,
+    0.1
+  ],
+  "spark_start": [
+    0.18,
+    1.535,
+    0.1
+  ],
+  "spark_end": [
+    0.18,
+    1.5,
+    0.1
+  ],
+  "bonding_nodes": [
+    "bonding_wire"
+  ],
+  "ground_nodes": [
+    "ground_wire",
+    "ground_wire_inlet"
+  ],
+  "camera_target": [
+    0.1,
+    1.7,
+    0
+  ],
+  "camera_position": [
+    5,
+    4.5,
+    7
+  ],
+  "case_use": [
+    "valley",
+    "glenpool"
+  ],
+  "glenpool_hide": [
+    "float",
+    "float_tape",
+    "float_tape_terminal",
+    "gauge_system"
+  ],
+  "asset": "tank.glb",
+  "units": "metres",
+  "up_axis": "Y",
+  "front": "+Z",
+  "provenance": "Original Blender teaching geometry, informed by investigation diagrams, not measured accident reconstruction.",
+  "node_names": [
+    "static_details_weighing_pad",
+    "static_details_brushed_stainless_steel",
+    "tank_shell",
+    "tank_front",
+    "tank_roof",
+    "tank_roof_front",
+    "static_details_machined_bright_edge",
+    "tank_front_machined_bright_edge",
+    "liquid",
+    "float_float_brushed_brass",
+    "float_machined_bright_edge",
+    "float_brushed_stainless_steel",
+    "float",
+    "float_tape",
+    "float_tape_terminal",
+    "gauge_system_brushed_stainless_steel",
+    "static_details_cast_dark_iron",
+    "inlet",
+    "static_details_hazard_red",
+    "internal_fill_pipe",
+    "gauge_system_cast_dark_iron",
+    "gauge_system_painted_safety_label",
+    "bonding_wire",
+    "ground_wire",
+    "static_details_earthing_copper",
+    "ground_wire_inlet",
+    "gauge_system"
+  ],
+  "blender_version": "4.5.13 LTS"
+}

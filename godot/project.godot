@@ -1,0 +1,23 @@
+config_version=5
+[application]
+config/name="Electrostatic Case Studio"
+run/main_scene="res://Main.tscn"
+config/features=PackedStringArray("4.4", "GL Compatibility")
+config/description="Blender assets and Godot qualitative electrostatic teaching scenes."
+[display]
+window/size/viewport_width=1200
+window/size/viewport_height=700
+window/stretch/mode="disabled"
+window/size/transparent=false
+[rendering]
+renderer/rendering_method="gl_compatibility"
+renderer/rendering_method.mobile="gl_compatibility"
+textures/default_filters/use_nearest_mipmap_filter=false
+anti_aliasing/quality/msaa_3d=1
+environment/defaults/default_clear_color=Color(0.025,0.042,0.065,1)
+[physics]
+common/physics_ticks_per_second=30
+[audio]
+driver/enable_input=false
+[editor_plugins]
+enabled=PackedStringArray()

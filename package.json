@@ -1,1 +1,12 @@
-{"name":"electrostatic-space-lab","version":"0.3.0","private":true,"type":"module","scripts":{"test":"node --test physics.test.mjs flux-physics.test.mjs field-flow.test.mjs spark-physics.test.mjs propagation-physics.test.mjs","start":"node serve.mjs","build":"node build.mjs"}}
+{
+  "name": "electrostatic-space-lab",
+  "version": "0.4.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test physics.test.mjs flux-physics.test.mjs field-flow.test.mjs spark-physics.test.mjs propagation-physics.test.mjs flux-journey.test.mjs moving-charge-physics.test.mjs beam-physics.test.mjs",
+    "start": "node serve.mjs",
+    "build": "node build.mjs",
+    "package:local": "node package-local.mjs"
+  }
+}

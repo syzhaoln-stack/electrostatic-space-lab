@@ -1,0 +1,48 @@
+{
+  "validatedAt": "2026-10-15T01:48:22.269Z",
+  "totalBytes": 3714740,
+  "assets": [
+    {
+      "asset": "desmoines.glb",
+      "bytes": 1730508,
+      "nodes": 32,
+      "meshes": 29,
+      "primitives": 29,
+      "triangles": 45012,
+      "materials": 13,
+      "worldBoundsMetres": {
+        "min": [
+          -1.112,
+          0,
+          -0.7
+        ],
+        "max": [
+          2.072,
+          1.8141,
+          0.836
+        ]
+      }
+    },
+    {
+      "asset": "tank.glb",
+      "bytes": 1984232,
+      "nodes": 27,
+      "meshes": 25,
+      "primitives": 25,
+      "triangles": 68460,
+      "materials": 12,
+      "worldBoundsMetres": {
+        "min": [
+          -2.023,
+          0,
+          -1.75
+        ],
+        "max": [
+          2.4163,
+          3.8014,
+          1.75
+        ]
+      }
+    }
+  ]
+}

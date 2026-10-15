@@ -10,3 +10,46 @@
 @media(max-width:760px){.flux-purpose{padding:18px 20px}.flux-purpose h3{font-size:16px}.flux-purpose>button{width:100%;font-size:11px;padding:10px}.flux-motion-tools{max-width:100%;gap:7px}.flux-motion-tools>span{font-size:9px}.flux-lab .stage-bottom{display:block}.flux-motion-tools{width:fit-content}.flux-surface-note{display:inline-block;padding:5px 8px;margin-top:5px}}
 .flux-lab .stage-wrap{background:#07111d;border-color:#233b50}.flux-scene-note{background:#0c1c2bc9;border-color:#284155;color:#b4ccda;backdrop-filter:blur(8px)}.flux-stage-key .flux-in{color:#8cdcff!important}.flux-stage-key .flux-out{color:#ffd28a!important}.flux-motion-tools{background:#0b1b2ae8;border-color:#2c465a}.flux-motion-tools button,.flux-motion-tools button[aria-pressed]{background:#183247;color:#d0e3ee;border-color:#355269}.flux-motion-tools>span{color:#8fabbf}.flux-surface-note{color:#9dbacc;background:#0b1b2acc}
 body.cinematic .flux-experience .flux-in{color:#8cdcff!important}body.cinematic .flux-experience .flux-out{color:#ffd28a!important}body.cinematic .flux-experience .flux-zero{color:#a3becf}
+/* A single selected field line, with first-person travel and a persistent locator. */
+.flux-journey-bar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:14px 24px;padding:19px 22px;margin:0 0 14px;border:1px solid #375167;border-radius:14px;background:linear-gradient(110deg,#102538,#0a1623);color:#dbe9f1}.flux-journey-intro>span{display:block;font-size:10px;letter-spacing:.09em;color:#8bb9cc;margin-bottom:6px}.flux-journey-intro>strong{font-size:19px;line-height:1.6;font-weight:550}.flux-journey-intro>p{margin:5px 0 0;font-size:11px;color:#9ab2c4}.flux-journey-actions{display:flex;align-items:center;gap:12px}.flux-source-choice{display:flex;border:1px solid #355063;border-radius:9px;padding:3px;gap:3px}.flux-source-choice button{border:0;background:transparent;color:#a8bed0;font-size:12px;padding:9px 12px}.flux-source-choice button[aria-pressed=true]{background:#26465b;color:#e9f7ff}.flux-journey-actions>.primary{font-size:13px;padding:12px 17px;background:#a6dfed;color:#092732;border-color:#a6dfed;white-space:nowrap}.flux-journey-controls{flex-basis:100%;border-top:1px solid #2b4254;padding-top:13px;display:flex;align-items:center;gap:18px}.flux-journey-controls>div{display:flex;flex-wrap:wrap;gap:6px}.flux-journey-controls button{font-size:11px;padding:8px 11px;background:#122a3c;border-color:#345266;color:#c4d9e8}.flux-journey-controls button[aria-pressed=true]{background:#c3e6ef;border-color:#c3e6ef;color:#16394a}.flux-journey-controls>label{display:flex;align-items:center;gap:10px;flex:1;min-width:200px;font-size:11px;color:#9db7ca}.flux-journey-controls input{flex:1;min-width:70px;accent-color:#a6dfed}.flux-journey-hud{position:absolute;top:95px;left:22px;right:22px;display:flex;justify-content:space-between;gap:24px;pointer-events:none}.flux-journey-phase{max-width:310px;align-self:flex-start;padding:15px 17px;background:#081522dd;border:1px solid #304658;border-radius:12px;backdrop-filter:blur(8px)}.flux-journey-phase>span{font-size:10px;color:#8faabd}.flux-journey-phase>strong{display:block;font-size:22px;color:#e4f3fb;font-weight:550;line-height:1.6;margin:5px 0}.flux-journey-phase>p{font-size:12px;line-height:1.8;color:#b3c9d8;margin:0}.flux-journey-counts{display:flex;gap:18px;margin-top:12px;font-size:12px}.flux-journey-hud svg{width:190px;height:105px;flex-shrink:0;background:#07131fcc;border:1px solid #284052;border-radius:10px}.flux-journey-hud ellipse{fill:#16374a35;stroke:#587d91;stroke-width:1;stroke-dasharray:3 3}.flux-journey-hud path{fill:none;stroke:#c4ae7d;stroke-width:1.5}.flux-journey-hud text{font:10px 'Microsoft YaHei',sans-serif;fill:#8ba9bc}#flux-map-source{fill:#ff9473}#flux-map-eye{fill:#fff7d7;stroke:#1a2934;stroke-width:1.5}.flux-following .flux-scene-note,.flux-following .flux-stage-key,.flux-following .stage-top .view-switch,.flux-following .stage-bottom,.flux-following #flux-move-controls,.flux-following #flux-patch-card,.flux-following #flux-next,.flux-following #flux-reset{display:none!important}.flux-lab .stage-wrap{width:100%}.flux-following .stage{cursor:default}
+@media(max-width:1000px){.flux-journey-intro>strong{font-size:17px}.flux-journey-hud{left:14px;right:14px;gap:12px}.flux-journey-phase{max-width:230px;padding:12px}.flux-journey-phase>strong{font-size:18px}.flux-journey-hud svg{width:140px;height:76px}.flux-journey-controls{flex-wrap:wrap}.flux-journey-controls>label{min-width:100%;flex-basis:100%}}
+@media(max-width:760px){.flux-journey-bar{padding:16px;gap:12px}.flux-journey-intro>strong{font-size:16px}.flux-journey-actions{justify-content:space-between;width:100%;gap:7px}.flux-source-choice button{font-size:11px;padding:8px}.flux-journey-actions>.primary{padding:11px 10px;font-size:11px}.flux-journey-controls>div{gap:5px}.flux-journey-controls button{padding:8px;font-size:10px}.flux-journey-hud{top:78px;left:12px;right:12px;display:block}.flux-journey-phase{padding:11px 13px;max-width:none;width:100%;box-sizing:border-box}.flux-journey-phase>strong{font-size:18px;margin:2px 0}.flux-journey-phase>p{font-size:11px;max-width:100%}.flux-journey-counts{font-size:11px;margin-top:8px}.flux-journey-hud svg{position:absolute;top:276px;right:0;width:125px;height:68px}.flux-following .flux-lab .stage-wrap{height:500px;min-height:500px}.flux-following .flux-lab .stage-top .scene-label{max-width:100%}}
+
+/* Compact experiment: one canvas, direct actions, optional explanation. */
+.flux-experience .flux-lab{display:flex;flex-direction:column;gap:10px}
+.flux-experience .flux-lab .stage-wrap{height:min(58vh,600px);min-height:420px;width:100%}
+.flux-experience .flux-steps{display:flex;width:fit-content;gap:6px;margin-bottom:10px}
+.flux-experience .flux-steps button{flex:none;padding:9px 16px;text-align:center}
+.flux-experience .flux-steps span{font-size:12px;font-weight:500}
+.flux-experience .flux-journey-bar{padding:10px 12px;margin-bottom:10px;border-radius:8px;gap:10px;justify-content:flex-start;background:#091521}
+.flux-experience .flux-journey-actions{width:100%;justify-content:space-between}
+.flux-experience .flux-journey-actions>.primary{font-size:12px;padding:10px 18px}
+.flux-experience .flux-journey-controls{padding-top:10px;gap:12px}
+.flux-experience .flux-panel{display:flex;flex-wrap:wrap;align-items:flex-start;gap:12px;width:100%;padding:14px;border-radius:10px}
+.flux-experience .flux-panel>*{flex:1 1 210px;min-width:0;margin:0}
+.flux-experience .flux-panel>button{flex:0 1 auto;align-self:center;width:auto;padding:10px 14px;font-size:12px}
+.flux-experience .flux-panel .control{margin:0 0 8px}
+.flux-experience .flux-panel .control label{font-size:12px}
+.flux-experience .flux-patch-card,.flux-experience .flux-total-card{padding:10px 12px;border-radius:8px}
+.flux-experience .flux-patch-card p{font-size:11px;margin:4px 0}
+.flux-experience .flux-patch-card>strong{font-size:13px}
+.flux-experience .flux-small-label{font-size:10px;margin-bottom:5px}
+.flux-experience .flux-sum{font-size:19px}
+.flux-experience .flux-charge-meter{margin-top:8px;padding-top:8px}
+.flux-experience .flux-stage-key{top:65px;font-size:10px}
+.flux-experience .flux-scene-note,.flux-experience .stage-top .scene-label strong,.flux-experience .flux-motion-tools>span,.flux-experience .flux-surface-note{display:none}
+.flux-experience .flux-purpose{padding:10px 0;margin-top:8px;border:0;background:none;display:flex}
+.flux-experience .flux-purpose>button{padding:9px 14px;font-size:12px;width:auto}
+.flux-experience .flux-advanced{margin-top:8px;padding:12px 16px;border-radius:8px}
+.flux-experience .flux-advanced summary{font-size:12px}
+.flux-extra-notes h2{font-size:17px}.flux-extra-notes p{font-size:12px;line-height:1.8}
+.flux-experience .flux-journey-phase>span{display:none}.flux-experience .flux-journey-phase>strong{font-size:17px;margin:0 0 4px}
+.flux-experience .flux-journey-phase{padding:10px 12px;max-width:260px}
+.flux-experience .flux-journey-phase>p{font-size:11px}
+@media(max-width:760px){
+.flux-experience .flux-lab .stage-wrap{height:480px;min-height:480px}
+.flux-experience .flux-steps{width:100%;gap:5px}.flux-experience .flux-steps button{flex:1;padding:9px 7px}.flux-experience .flux-steps span{font-size:11px}
+.flux-experience .flux-journey-actions{gap:6px}.flux-experience .flux-journey-actions>.primary{padding:10px 9px;font-size:11px}.flux-experience .flux-source-choice button{padding:7px;font-size:10px}
+.flux-experience .flux-panel{padding:12px;gap:10px}.flux-experience .flux-panel>*{flex-basis:100%}.flux-experience .flux-panel>button{flex:1 1 auto}.flux-experience .flux-stage-key{top:62px;left:12px}
+.flux-experience .flux-journey-hud{top:64px}.flux-experience .flux-journey-phase{max-width:none}.flux-experience .flux-journey-hud svg{top:270px}
+}

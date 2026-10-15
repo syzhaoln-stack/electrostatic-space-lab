@@ -6,9 +6,9 @@ import { fieldAt } from './physics.js';
  * always show the full three-dimensional E, not its projection onto the plane.
  * Length and colour use a fixed, monotone compression, never per-frame maxima.
  */
-export function buildVectorLattice(scene, THREE, getSources, { plane = 'xz' } = {}) {
+export function buildVectorLattice(scene, THREE, getSources, { plane = 'xz', step = 0.28 } = {}) {
   if (plane !== 'xz' && plane !== 'xy') throw new Error('Vector lattice plane must be xz or xy');
-  const step = 0.28;
+  if (!(step > 0 && step <= 2)) throw new Error('Invalid lattice spacing');
   const nx = Math.floor(12 / step) + 1;
   const ny = Math.floor(8 / step) + 1;
   const count = nx * ny;

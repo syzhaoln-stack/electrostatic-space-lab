@@ -1,0 +1,84 @@
+{
+  "dimensions_m": {
+    "tote_width": 1.3,
+    "tote_depth": 1.12,
+    "tote_top_y": 1.455,
+    "scale_top_y": 0.185
+  },
+  "cutaway_hide": [
+    "container_front"
+  ],
+  "liquid_surface_y": 0.67,
+  "emission": [
+    0.43,
+    1.38,
+    0.12
+  ],
+  "spark_start": [
+    0.75,
+    1.21,
+    0.25
+  ],
+  "spark_end": [
+    0.65,
+    1.21,
+    0.25
+  ],
+  "bonding_nodes": [
+    "bonding_wire",
+    "bonding_clamp"
+  ],
+  "ground_nodes": [
+    "ground_wire"
+  ],
+  "camera_target": [
+    0.35,
+    0.9,
+    0
+  ],
+  "camera_position": [
+    3.8,
+    3.0,
+    5.3
+  ],
+  "asset": "desmoines.glb",
+  "units": "metres",
+  "up_axis": "Y",
+  "front": "+Z",
+  "provenance": "Original Blender teaching geometry, informed by investigation diagrams, not measured accident reconstruction.",
+  "node_names": [
+    "static_details_weighing_pad",
+    "static_details_machined_bright_edge",
+    "static_details_cast_dark_iron",
+    "static_details_brushed_stainless_steel",
+    "container_shell_brushed_stainless_steel",
+    "container_shell",
+    "container_front",
+    "container_lid",
+    "static_details_black_nitrile_hose",
+    "liquid",
+    "container_front_painted_safety_label",
+    "container_front_hazard_red",
+    "container_front_cast_dark_iron",
+    "container_front_machined_bright_edge",
+    "static_details_hazard_red",
+    "pump_cast_dark_iron",
+    "pump_machined_bright_edge",
+    "pump_pump_dark_petrol_enamel",
+    "pump_brushed_stainless_steel",
+    "pump",
+    "hose",
+    "insulator",
+    "nozzle",
+    "nozzle_handle",
+    "counterweight_suspension",
+    "counterweight",
+    "bonding_wire",
+    "bonding_clamp",
+    "bonding_clamp.001",
+    "ground_wire_ground_conductor_insulation",
+    "ground_wire",
+    "static_details_earthing_copper"
+  ],
+  "blender_version": "4.5.13 LTS"
+}

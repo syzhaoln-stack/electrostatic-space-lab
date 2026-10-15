@@ -11,17 +11,9 @@ export function fieldColour(magnitude) {
  return stops[i].map((v,k)=>Math.round(v+(stops[i+1][k]-v)*f));
 }
 
-export function renderParticleField(scene,sources,mode,offset=0) {
- scene.clearLayer('field-slice');
+export function renderParticleField(scene,sources,mode,offset=0,layerName='field-slice') {
+ scene.clearLayer(layerName);
  if(mode==='off')return ()=>{};
- if(mode==='space'){
-  for(let x=-5.5;x<=5.5;x+=2.2)for(let y=-2.6;y<=2.6;y+=2.6)for(let z=-2.6;z<=2.6;z+=2.6){
-   const p=[x,y,z],E=fieldAt(p,sources).E,m=Math.hypot(...E);
-   if(m<.01)continue;
-   scene.arrow(p,E,'#6bc4e2',.55,'field-slice');
-  }
-  return ()=>{};
- }
  const width=12.8,height=7.2,nx=192,ny=108;
  const point=(x,y,lift=0)=>mode==='xy'?[x,y,offset+lift]:[x,offset+lift,y];
  const canvas=document.createElement('canvas');canvas.width=nx;canvas.height=ny;
@@ -36,8 +28,8 @@ export function renderParticleField(scene,sources,mode,offset=0) {
  const texture=new THREE.CanvasTexture(canvas);texture.colorSpace=THREE.SRGBColorSpace;
  const mesh=new THREE.Mesh(new THREE.PlaneGeometry(width,height),new THREE.MeshBasicMaterial({map:texture,side:THREE.DoubleSide,transparent:true,opacity:.95,depthWrite:false,toneMapped:false}));
  if(mode==='xz')mesh.rotation.x=Math.PI/2;
- mesh.position.set(...point(0,0));mesh.renderOrder=-2;scene.layer('field-slice').add(mesh);
- scene.line([point(-width/2,-height/2),point(width/2,-height/2),point(width/2,height/2),point(-width/2,height/2),point(-width/2,-height/2)],'#478ba5','field-slice',.16);
+ mesh.position.set(...point(0,0));mesh.renderOrder=-2;scene.layer(layerName).add(mesh);
+ scene.line([point(-width/2,-height/2),point(width/2,-height/2),point(width/2,height/2),point(-width/2,height/2),point(-width/2,-height/2)],'#478ba5',layerName,.16);
  // Short integral curves form a continuous direction texture. Markers move
  // along E, not along a particle solution; their speed is purely illustrative.
  const paths=[],fixed=[];
@@ -56,22 +48,22 @@ export function renderParticleField(scene,sources,mode,offset=0) {
   for(let j=1;j<path.length;j++)fixed.push(...path[j-1],...path[j]);
  }
  const fixedGeo=new THREE.BufferGeometry();fixedGeo.setAttribute('position',new THREE.Float32BufferAttribute(fixed,3));
- const fixedLines=new THREE.LineSegments(fixedGeo,new THREE.LineBasicMaterial({color:'#4aaeca',transparent:true,opacity:.13,depthWrite:false,blending:THREE.AdditiveBlending,toneMapped:false}));scene.layer('field-slice').add(fixedLines);
+ const fixedLines=new THREE.LineSegments(fixedGeo,new THREE.LineBasicMaterial({color:'#4aaeca',transparent:true,opacity:.13,depthWrite:false,blending:THREE.AdditiveBlending,toneMapped:false}));scene.layer(layerName).add(fixedLines);
  const movingPositions=new Float32Array(paths.length*6*2*3),movingColours=new Float32Array(paths.length*6*2*3),movingGeo=new THREE.BufferGeometry();movingGeo.setAttribute('position',new THREE.BufferAttribute(movingPositions,3));movingGeo.setAttribute('color',new THREE.BufferAttribute(movingColours,3));
- const movingLines=new THREE.LineSegments(movingGeo,new THREE.LineBasicMaterial({color:'#8ae8ff',vertexColors:true,transparent:true,opacity:.75,depthWrite:false,blending:THREE.AdditiveBlending,toneMapped:false}));movingLines.frustumCulled=false;scene.layer('field-slice').add(movingLines);
+ const movingLines=new THREE.LineSegments(movingGeo,new THREE.LineBasicMaterial({color:'#8ae8ff',vertexColors:true,transparent:true,opacity:.52,depthWrite:false,blending:THREE.AdditiveBlending,toneMapped:false}));movingLines.frustumCulled=false;scene.layer(layerName).add(movingLines);
  for(let x=-5.7;x<=5.71;x+=1.9)for(let y=-2.7;y<=2.71;y+=2.7){
   const pos=point(x,y,.025);
   if(sources.some(s=>Math.hypot(...s.pos.map((v,k)=>v-pos[k]))<.5))continue;
-  const E=fieldAt(point(x,y),sources).E,m=Math.hypot(...E),normal=E[mode==='xy'?2:1],projected=mode==='xy'?[E[0],E[1],0]:[E[0],0,E[2]];
+  const E=fieldAt(point(x,y),sources).E,m=Math.hypot(...E),normal=E[mode==='xy'?2:1]*(mode==='xy'?1:-1),projected=mode==='xy'?[E[0],E[1],0]:[E[0],0,E[2]];
   if(m<.01)continue;
-  if(Math.hypot(...projected)>.035*m)scene.arrow(pos,projected,'#5c9db3',.3,'field-slice');
+  if(Math.hypot(...projected)>.035*m)scene.arrow(pos,projected,'#5c9db3',.3,layerName);
   if(Math.abs(normal)>.3*m){
    // Circle + dot / cross denotes the positive / negative coordinate normal.
-   const ring=new THREE.Mesh(new THREE.RingGeometry(.055,.073,20),new THREE.MeshBasicMaterial({color:'#7fb5cb',side:THREE.DoubleSide}));
+   const ring=new THREE.Mesh(new THREE.RingGeometry(.09,.12,24),new THREE.MeshBasicMaterial({color:'#91d3e4',side:THREE.DoubleSide}));
    if(mode==='xz')ring.rotation.x=Math.PI/2;
-   ring.position.set(...point(x-.17,y,.03));scene.layer('field-slice').add(ring);
-   if(normal>0){const dot=new THREE.Mesh(new THREE.SphereGeometry(.026,8,6),new THREE.MeshBasicMaterial({color:'#7fb5cb'}));dot.position.copy(ring.position);scene.layer('field-slice').add(dot);}
-   else for(const sign of [-1,1])scene.line([point(x-.205,y-.035*sign,.035),point(x-.135,y+.035*sign,.035)],'#7fb5cb','field-slice');
+   ring.position.set(...point(x-.17,y,.03));scene.layer(layerName).add(ring);
+   if(normal>0){const dot=new THREE.Mesh(new THREE.SphereGeometry(.043,10,8),new THREE.MeshBasicMaterial({color:'#91d3e4'}));dot.position.copy(ring.position);scene.layer(layerName).add(dot);}
+   else for(const sign of [-1,1])scene.line([point(x-.23,y-.06*sign,.035),point(x-.11,y+.06*sign,.035)],'#91d3e4',layerName);
   }
  }
  const animate=t=>{let cursor=0;for(let i=0;i<paths.length;i++){

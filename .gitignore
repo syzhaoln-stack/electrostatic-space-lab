@@ -8,3 +8,13 @@ media/*.wav
 podcast-manifest.json
 *.tar.gz
 node_modules/
+local-release/
+.local-server*
+*.zip
+godot/.godot/
+blender/*.blend1
+!assets/godot/*.png
+!assets/godot/*.svg
+
+!blender/*-preview.png
+blender/*-build.log

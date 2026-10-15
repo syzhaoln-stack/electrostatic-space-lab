@@ -20,3 +20,18 @@
 .spark-details,.spark-details p{color:#7f9fb3}.spark-details summary{color:#a9cadb}
 .spark-formula-row>div,.spark-evidence{background:#0d1b2a;border-color:#25394e}.spark-formula-row strong{color:#f1d29a}.spark-formula-row span{color:#8ba9bd}
 .spark-evidence h3{color:#d8e9f4}.spark-evidence p{color:#97b3c6}.spark-evidence figcaption{color:#7c9aaf}.spark-evidence img{background:#06101b}
+
+/* Compact control tray below the experiment. */
+.spark-lab .spark-layout{display:flex;flex-direction:column;gap:10px}
+.spark-lab .spark-stage-wrap{position:relative;top:0;width:100%;height:min(58vh,600px);min-height:420px;border-radius:12px}
+.spark-lab .spark-panel{display:grid;grid-template-columns:1.1fr 1.5fr 1fr;gap:12px 18px;width:100%;padding:14px;border-radius:10px;align-items:center}
+.spark-lab .spark-panel .control{margin:0}.spark-lab .spark-actions{margin:0;grid-column:1;grid-row:2}
+.spark-lab .spark-status{min-height:0;grid-column:1 / -1;padding:8px 11px;margin:0;font-size:11px}
+.spark-lab .spark-readings{grid-column:2;grid-row:1 / span 2;margin:0;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.spark-lab .spark-readings>div{padding:8px}.spark-lab .spark-readings strong{font-size:17px}.spark-lab .spark-readings span{font-size:9px;white-space:nowrap}
+.spark-lab .spark-field-meter{grid-column:3;grid-row:1 / span 2;border-top:0;padding:0}
+.spark-lab>.spark-details{border:1px solid #25394e;border-radius:8px;padding:12px 16px;margin-top:10px;background:#0a1723}
+.spark-lab>.spark-details summary{font-size:12px}.spark-lab>.spark-details h2{font-size:18px}
+.spark-lab .spark-scene-top strong{display:none}.spark-lab .spark-scene-top span{font-size:10px}
+.spark-lab .spark-scene-bottom small{display:none}.spark-lab .spark-hud{top:auto;bottom:58px;font-size:11px}
+@media(max-width:760px){.spark-lab .spark-stage-wrap{height:480px;min-height:480px}.spark-lab .spark-panel{grid-template-columns:1fr;gap:12px;padding:12px}.spark-lab .spark-panel>*{grid-column:1;grid-row:auto}.spark-lab .spark-readings{grid-column:1;grid-row:auto;grid-template-columns:repeat(2,minmax(0,1fr))}.spark-lab .spark-field-meter{grid-column:1;grid-row:auto}.spark-lab .spark-actions{grid-row:auto}.spark-lab .spark-hud{bottom:76px}}
