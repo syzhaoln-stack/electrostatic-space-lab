@@ -1,10 +1,10 @@
 {
   "name": "electrostatic-space-lab",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node --test physics.test.mjs flux-physics.test.mjs field-flow.test.mjs spark-physics.test.mjs propagation-physics.test.mjs flux-journey.test.mjs moving-charge-physics.test.mjs beam-physics.test.mjs field-frame.test.mjs beam-scoring.test.mjs potential-surfaces.test.mjs",
+    "test": "node --test physics.test.mjs flux-physics.test.mjs field-flow.test.mjs spark-physics.test.mjs propagation-physics.test.mjs flux-journey.test.mjs moving-charge-physics.test.mjs beam-physics.test.mjs field-frame.test.mjs beam-scoring.test.mjs potential-surfaces.test.mjs aim-physics.test.mjs wall-physics.test.mjs field-challenge.test.mjs flux-goal.test.mjs",
     "start": "node serve.mjs",
     "build": "node build.mjs",
     "package:local": "node package-local.mjs"

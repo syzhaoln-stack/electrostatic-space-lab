@@ -1,0 +1,58 @@
+import {THREE} from './scene.js';
+import {OrbitControls} from './vendor/OrbitControls.js';
+import {WALL,wallOptions,wallSampleAt} from './wall-physics.js';
+
+const v=p=>new THREE.Vector3(...p),GOLD='#f4cf8e',MINT='#91e8cd',CYAN='#70b8d0',BG='#061018';
+export function createWallView(host,{onFieldChange=()=>{}}={}){
+ let o=wallOptions(),result=null,previous=null,time=0,disposed=false,trail=null,trailTimes=[],mode='space',historyShown=true;
+ const scene=new THREE.Scene();scene.background=new THREE.Color(BG);
+ const camera=new THREE.PerspectiveCamera(34,1,.1,150),renderer=new THREE.WebGLRenderer({antialias:true,preserveDrawingBuffer:true});renderer.setPixelRatio(Math.min(devicePixelRatio,1.8));renderer.outputColorSpace=THREE.SRGBColorSpace;host.append(renderer.domElement);
+ const orbit=new OrbitControls(camera,renderer.domElement);orbit.enableDamping=true;orbit.dampingFactor=.08;orbit.enablePan=false;orbit.minDistance=15;orbit.maxDistance=65;orbit.target.set(0,0,0);
+ scene.add(new THREE.HemisphereLight('#d7e4ef','#091622',2));const light=new THREE.DirectionalLight('#ffe3b4',3);light.position.set(-4,12,10);scene.add(light);
+ const apparatus=new THREE.Group(),current=new THREE.Group(),history=new THREE.Group(),field=new THREE.Group();scene.add(apparatus,current,history,field);
+ const mat=(color,opacity=1)=>new THREE.MeshBasicMaterial({color,transparent:opacity<1,opacity,depthWrite:opacity===1,side:THREE.DoubleSide});
+ function line(points,color,opacity=1,parent=apparatus){const object=new THREE.Line(new THREE.BufferGeometry().setFromPoints(points.map(v)),new THREE.LineBasicMaterial({color,transparent:true,opacity}));parent.add(object);return object;}
+ function plane(x,y,z,width,depth,color,opacity){const mesh=new THREE.Mesh(new THREE.PlaneGeometry(width,depth),mat(color,opacity));mesh.rotation.x=-Math.PI/2;mesh.position.set(x,y,z);apparatus.add(mesh);return mesh;}
+ function clear(group){for(const child of [...group.children]){child.traverse(object=>{object.geometry?.dispose();if(object.material)for(const material of Array.isArray(object.material)?object.material:[object.material])material.dispose();});group.remove(child);}}
+ plane(0,5,0,18,6.6,'#75949f',.045);plane(0,-5,0,18,6.6,'#789aa6',.035);
+ const targetPlane=plane(3.25,4.982,0,10.5,5.6,MINT,.12);
+ for(const y of [-5,5])line([[-9,y,-3.3],[9,y,-3.3],[9,y,3.3],[-9,y,3.3],[-9,y,-3.3]],'#77919e',.38);
+ for(const x of [-9,9])for(const z of [-3.3,3.3])line([[x,-5,z],[x,5,z]],'#77919e',.19);
+ line([[-2,4.975,-2.8],[8.5,4.975,-2.8],[8.5,4.975,2.8],[-2,4.975,2.8],[-2,4.975,-2.8]],MINT,.9);
+ for(let x=-1.5;x<=8;x+=1)line([[x,4.97,-2.8],[x,4.97,2.8]],MINT,.075);
+ for(let z=-2;z<=2;z+=1)line([[-2,4.97,z],[8.5,4.97,z]],MINT,.075);
+ for(let x=-8;x<=8;x+=2)line([[x,-5.02,-3.3],[x,-5.02,3.3]],'#4e7186',.13);
+ const gun=new THREE.Mesh(new THREE.CylinderGeometry(.28,.38,.9,32),new THREE.MeshStandardMaterial({color:'#4f6573',metalness:.7,roughness:.26}));gun.rotation.z=-Math.PI/2;gun.position.x=-9.55;apparatus.add(gun);
+ const muzzle=new THREE.Mesh(new THREE.TorusGeometry(.28,.035,8,48),mat(GOLD));muzzle.rotation.y=Math.PI/2;muzzle.position.x=-9.08;apparatus.add(muzzle);
+ const particleMesh=new THREE.InstancedMesh(new THREE.SphereGeometry(.052,10,8),mat(GOLD),100),impactMesh=new THREE.InstancedMesh(new THREE.SphereGeometry(.075,10,8),mat(MINT),100);particleMesh.frustumCulled=impactMesh.frustumCulled=false;particleMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);impactMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);current.add(particleMesh,impactMesh);
+ const pose=new THREE.Object3D(),color=new THREE.Color();
+ const eArrow=new THREE.ArrowHelper(v([0,-1,0]),v([-4,0,0]),1,CYAN,.19,.10),fArrow=new THREE.ArrowHelper(v([0,1,0]),v([-4,0,0]),1,GOLD,.19,.10);scene.add(eArrow,fArrow);
+ const overlay=document.createElement('div');overlay.className='wall-world-overlay';host.append(overlay);
+ function tag(text,cls){const element=document.createElement('span');element.className='wall-world-tag '+cls;element.textContent=text;overlay.append(element);return element;}
+ const targetTag=tag('上壁 · 发亮区域','wall-target-tag'),exitTag=tag('出口','wall-exit-tag'),eTag=tag('E','wall-e-tag'),fTag=tag('F','wall-f-tag');
+ const handle=document.createElement('button');handle.type='button';handle.className='wall-field-handle';handle.textContent='E ↕';handle.setAttribute('role','slider');handle.setAttribute('aria-label','拖动改变电场；向上增加 E，负粒子受力向下');handle.setAttribute('aria-valuemin','-2000');handle.setAttribute('aria-valuemax','2000');overlay.append(handle);const handleLabel=tag('','wall-handle-label');
+ const base=v([-6.5,0,3.7]);line([base.clone().add(v([0,-2.8,0])).toArray(),base.clone().add(v([0,2.8,0])).toArray()],'#5f8c9e',.6);
+ function screen(p){const q=p.clone().project(camera);return {x:(q.x+1)*host.clientWidth/2,y:(1-q.y)*host.clientHeight/2,visible:q.z<1&&Math.abs(q.x)<1.1&&Math.abs(q.y)<1.1};}
+ function put(element,p,dx=0,dy=0){const q=screen(p);element.style.left=q.x+dx+'px';element.style.top=q.y+dy+'px';element.hidden=!q.visible;}
+ let drag=null;handle.addEventListener('pointerdown',event=>{event.preventDefault();event.stopPropagation();const a=screen(base),b=screen(base.clone().add(v([0,1,0]))),d=new THREE.Vector2(b.x-a.x,b.y-a.y);drag={x:event.clientX,y:event.clientY,value:o.Ey,unit:d.clone().normalize(),scale:Math.max(d.length(),10)};orbit.enabled=false;handle.setPointerCapture(event.pointerId);handle.classList.add('dragging');});
+ handle.addEventListener('pointermove',event=>{if(!drag)return;event.preventDefault();const delta=((event.clientX-drag.x)*drag.unit.x+(event.clientY-drag.y)*drag.unit.y)/drag.scale;onFieldChange(Math.max(-2000,Math.min(2000,Math.round((drag.value+delta*2000/2.8)/25)*25)));});
+ const release=()=>{drag=null;orbit.enabled=true;handle.classList.remove('dragging');};handle.addEventListener('pointerup',release);handle.addEventListener('pointercancel',release);handle.addEventListener('lostpointercapture',release);
+ handle.addEventListener('keydown',event=>{if(!['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Home'].includes(event.key))return;event.preventDefault();onFieldChange(event.key==='Home'?0:Math.max(-2000,Math.min(2000,o.Ey+(event.key==='ArrowUp'||event.key==='ArrowRight'?1:-1)*(event.shiftKey?200:50))));});
+ function updateField(){clear(field);if(!o.Ey)return;const direction=v([0,Math.sign(o.Ey),0]),length=.35+.65*Math.tanh(Math.abs(o.Ey)/1000);for(const x of [-6,-2,2,6])for(const y of [-3,0,3])for(const z of [-1.8,1.8]){const a=new THREE.ArrowHelper(direction,v([x,y,z]),length,CYAN,.18,.09);a.line.material.transparent=a.cone.material.transparent=true;a.line.material.opacity=.31;a.cone.material.opacity=.60;field.add(a);}}
+ function trailData(value,sort=true){const segments=[];for(const trajectory of value.trajectories)for(let i=1;i<trajectory.samples.length;i++)segments.push({a:trajectory.samples[i-1].pos,b:trajectory.samples[i].pos,time:trajectory.samples[i].time});if(sort)segments.sort((a,b)=>a.time-b.time);const geometry=new THREE.BufferGeometry(),data=new Float32Array(segments.length*6);segments.forEach((segment,i)=>data.set([...segment.a,...segment.b],i*6));geometry.setAttribute('position',new THREE.BufferAttribute(data,3));return {geometry,times:segments.map(s=>s.time)};}
+ function resetTrail(){if(trail){scene.remove(trail);trail.geometry.dispose();trail.material.dispose();trail=null;}trailTimes=[];}
+ function fit(){const aspect=Math.max(1,host.clientWidth)/Math.max(1,host.clientHeight),dir=mode==='front'?v([0,0,1]):v([.12,.34,1]).normalize(),right=new THREE.Vector3().crossVectors(v([0,1,0]),dir).normalize(),up=new THREE.Vector3().crossVectors(dir,right).normalize(),tanV=Math.tan(camera.fov*Math.PI/360);let distance=20;for(const x of [-11,10])for(const y of [-6.5,6.5])for(const z of [-4,4]){const corner=v([x,y,z]);distance=Math.max(distance,Math.abs(corner.dot(right))/(tanV*aspect)+corner.dot(dir),Math.abs(corner.dot(up))/tanV+corner.dot(dir));}camera.aspect=aspect;camera.position.copy(dir.multiplyScalar(distance*1.04));camera.lookAt(0,0,0);camera.updateProjectionMatrix();orbit.target.set(0,0,0);orbit.update();}
+ function draw(now=0){if(disposed)return;time=now;let hits=0,arrived=0,emitted=0,tracked=null;
+  for(let i=0;i<100;i++){const tr=result?.trajectories[i],live=tr&&time>=tr.launchTime&&time<tr.arrival;pose.position.set(0,0,0);pose.scale.setScalar(0);if(live){const sample=wallSampleAt(tr,time,o);pose.position.set(...sample.pos);pose.scale.setScalar(Math.pow(o.massUnits,.25));tracked??=sample;}pose.updateMatrix();particleMesh.setMatrixAt(i,pose.matrix);
+   const impact=tr&&time>=tr.arrival;if(tr&&time>=tr.launchTime)emitted++;if(impact){arrived++;if(tr.hit)hits++;pose.position.set(...tr.impact.pos);const age=time-tr.arrival,scale=1+(age<.6?Math.sin(age/.6*Math.PI)*1.2:0);pose.scale.setScalar(scale);color.set(tr.hit?MINT:'#b58272');}else{pose.scale.setScalar(0);color.set(MINT);}pose.updateMatrix();impactMesh.setMatrixAt(i,pose.matrix);impactMesh.setColorAt(i,color);
+  }
+  particleMesh.instanceMatrix.needsUpdate=true;impactMesh.instanceMatrix.needsUpdate=true;if(impactMesh.instanceColor)impactMesh.instanceColor.needsUpdate=true;
+  if(trail){let lo=0,hi=trailTimes.length;while(lo<hi){const middle=(lo+hi)>>1;if(trailTimes[middle]<=time)lo=middle+1;else hi=middle;}trail.geometry.setDrawRange(0,lo*2);host.dataset.visibleTrailSegments=String(lo);host.dataset.lastVisibleTrailTime=lo?String(trailTimes[lo-1]):'none';}
+  const p=tracked?.pos||[-4,0,0],sign=Math.sign(o.Ey);eArrow.visible=fArrow.visible=sign!==0;for(const [arrow,s]of [[eArrow,sign],[fArrow,-sign]]){arrow.position.set(...p);if(s)arrow.setDirection(v([0,s,0]));}
+  orbit.update();if(sign){put(eTag,v(p).add(v([0,sign*1.22,0])),9,0);put(fTag,v(p).add(v([0,-sign*1.22,0])),9,0);}else eTag.hidden=fTag.hidden=true;
+  put(targetTag,v([3.25,5.72,0]));put(exitTag,v([9.5,0,-1.3]));const hp=base.clone().add(v([0,o.Ey/2000*2.8,0]));put(handle,hp);put(handleLabel,hp,0,30);handleLabel.textContent=(o.Ey>0?'+':'')+o.Ey+' V/m';handle.setAttribute('aria-valuenow',String(o.Ey));
+  targetPlane.material.opacity=.12+(hits>0?.018:0);history.visible=historyShown;host.dataset.hits=String(hits);host.dataset.arrived=String(arrived);host.dataset.emitted=String(emitted);host.dataset.time=String(time);host.dataset.forceOpposesField=sign?'true':'zero';renderer.render(scene,camera);return {hits,arrived,emitted};
+ }
+ const observer=new ResizeObserver(()=>{renderer.setSize(Math.max(1,host.clientWidth),Math.max(1,host.clientHeight),false);fit();draw(time);});observer.observe(host);updateField();fit();draw(0);
+ return {draw,setOptions(value){o=wallOptions(value);result=null;resetTrail();updateField();draw(0);},setResult(value){result=value;o=value.options;resetTrail();const data=trailData(result);trailTimes=data.times;trail=new THREE.LineSegments(data.geometry,new THREE.LineBasicMaterial({color:GOLD,transparent:true,opacity:.18}));trail.geometry.setDrawRange(0,0);scene.add(trail);draw(0);},remember(value){previous=value;clear(history);if(value){const data=trailData(value,false);history.add(new THREE.LineSegments(data.geometry,new THREE.LineBasicMaterial({color:'#8098a5',transparent:true,opacity:.12})));}host.dataset.historyCount=String(value?.total||0);},clearHistory(){previous=null;clear(history);host.dataset.historyCount='0';},showHistory(value){historyShown=value;},view(value){mode=value;fit();draw(time);},dispose(){disposed=true;observer.disconnect();orbit.dispose();scene.traverse(object=>{object.geometry?.dispose();if(object.material)for(const material of Array.isArray(object.material)?object.material:[object.material])material.dispose();});renderer.dispose();renderer.domElement.remove();overlay.remove();}};
+}

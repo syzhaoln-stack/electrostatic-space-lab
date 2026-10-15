@@ -3,6 +3,7 @@ import { FieldScene } from './scene.js';
 import { CONSTANTS, fieldAt, gaussianFlux } from './physics.js';
 import { enclosedSphereFraction } from './flux-physics.js';
 import { buildFluxLine } from './flux-journey.js';
+import { evaluateFluxGoal } from './flux-goal.js';
 
 const R = 2.1, SOURCE_RADIUS = 0.42, Q0 = 0.1;
 const UNIT = Q0 * 1e-12 / CONSTANTS.epsilon0;
@@ -101,6 +102,7 @@ export function mountFlux(container) {
   }
   explanation.append(extra);
   const $ = selector => container.querySelector(selector);
+  const goalPanel=document.createElement('div');goalPanel.className='flux-goal';goalPanel.innerHTML=`<button id="flux-goal-start">◎ 让它一进一出</button><div class="flux-goal-task" hidden><strong>让同一条场线一进一出</strong><div class="flux-goal-feedback"><i aria-hidden="true"></i><span id="flux-goal-status" role="status" aria-live="polite">拖动红球</span><span id="flux-goal-check" hidden>✓</span></div><div class="flux-goal-actions"><button id="flux-goal-again" hidden>再试一次</button><button id="flux-goal-exit">自由探索</button></div></div>`;$('.stage-wrap').append(goalPanel);
   const scene = new FieldScene($('.stage'), { extent: 6 });
   // A narrow screen needs a wider field of view so the external source stays visible.
   const fitViewport = () => { scene.camera.fov = $('.stage').clientWidth < 600 ? 52 : 38; scene.camera.updateProjectionMatrix(); };
@@ -110,6 +112,35 @@ export function mountFlux(container) {
   let source, sources, selected = { u: 1 / NU, phi: Math.PI + Math.PI / NP };
   let pending = 0, playFrame = 0, disposed = false, playing = false;
   let flowGlyphs = [], flowTime = 0, previousTime = 0, measuredTotal = 0;
+  let goalActive=false,goalSnapshot=null,goalEvaluation=null,goalHeldMs=0,goalCompleted=false,goalSuccessAt=-Infinity;
+  const goalHalo=scene.line(Array.from({length:97},(_,i)=>[R*1.018*Math.cos(i*Math.PI/48),R*1.018*Math.sin(i*Math.PI/48),0]),'#96e8c6','flux-goal-halo',.4);goalHalo.material.depthTest=false;goalHalo.renderOrder=24;goalHalo.visible=false;
+  function goalControls(active){
+    $('.flux-experience').classList.toggle('flux-goal-active',active);$('#flux-goal-start').hidden=active;$('.flux-goal-task').hidden=!active;
+    container.querySelectorAll('[data-flux-placement],[data-flux-sign],[data-flux-step],#flux-play,#flux-reset,#flux-start-mystery').forEach(el=>el.disabled=active);
+  }
+  function startGoal(){
+    if(!goalSnapshot)goalSnapshot={state:{...state},selected:{...selected},camera:scene.camera.position.clone(),up:scene.camera.up.clone(),target:scene.controls.target.clone(),view:container.querySelector('[data-flux-view].active')?.dataset.fluxView};
+    stopPlay();cancelAnimationFrame(pending);setStep(2);goalActive=true;goalEvaluation=null;goalHeldMs=0;goalCompleted=false;goalSuccessAt=-Infinity;goalHalo.visible=false;
+    Object.assign(state,{x:0,sign:1,challenge:false,surfaceVisible:true,a:R});$('#flux-source-x').value=0;
+    container.querySelectorAll('[data-flux-sign]').forEach(el=>el.setAttribute('aria-pressed',String(el.dataset.fluxSign==='1')));
+    goalControls(true);scene.cameraMove=null;setView('front',false);rebuild();
+  }
+  function exitGoal(){
+    goalActive=false;goalEvaluation=null;goalHeldMs=0;goalCompleted=false;goalHalo.visible=false;goalControls(false);
+    if(goalSnapshot){const saved=goalSnapshot;goalSnapshot=null;setStep(saved.state.step);if(saved.state.challenge)startMystery();Object.assign(state,saved.state);selected={...saved.selected};$('#flux-source-x').value=state.x;$('#flux-shape').value=state.a;$('#flux-shape-label').textContent=Math.abs(state.a-R)<.08?'接近圆球':state.a<R?'左右压扁':'左右拉长';container.querySelectorAll('[data-flux-sign]').forEach(el=>el.setAttribute('aria-pressed',String(+el.dataset.fluxSign===state.sign)));scene.cameraMove=null;scene.camera.position.copy(saved.camera);scene.camera.up.copy(saved.up);scene.controls.target.copy(saved.target);scene.controls.enabled=true;scene.controls.update();container.querySelectorAll('[data-flux-view]').forEach(el=>el.classList.toggle('active',el.dataset.fluxView===saved.view));rebuild();}
+    for(const el of [container,$('.stage')]){el.dataset.fluxGoal='';el.dataset.fluxGoalMatched='false';el.dataset.fluxGoalCompleted='false';el.dataset.fluxGoalHold='0';}
+  }
+  function tickGoal(elapsed,time){
+    if(!goalActive||!goalEvaluation)return;
+    const matched=goalEvaluation.matched;goalHeldMs=matched?Math.min(600,goalHeldMs+elapsed*1000):0;
+    if(goalHeldMs>=600&&!goalCompleted){goalCompleted=true;goalSuccessAt=time;}
+    goalPanel.classList.toggle('is-matched',matched);goalPanel.style.setProperty('--hold',goalHeldMs/600);$('#flux-goal-check').hidden=!goalCompleted;$('#flux-goal-again').hidden=!goalCompleted;
+    const status=matched?(goalHeldMs>=600?'一进一出 · 净通量 0':'停在这里'):goalEvaluation.entersThenExits?'继续向外拖':'拖动红球';if($('#flux-goal-status').textContent!==status)$('#flux-goal-status').textContent=status;
+    const pulse=!motionPreference.matches&&time-goalSuccessAt<1200?Math.sin(Math.PI*(time-goalSuccessAt)/600)**2:0;goalHalo.visible=matched;goalHalo.quaternion.copy(scene.camera.quaternion);goalHalo.material.opacity=.16+.54*pulse;goalHalo.scale.setScalar(1+.012*pulse);
+    for(const child of scene.layer('flux-line').children)if(child.userData.crossing)child.scale.setScalar(1+.15*pulse);
+    for(const el of [container,$('.stage')]){el.dataset.fluxGoal='one-in-one-out';el.dataset.fluxGoalMatched=String(matched);el.dataset.fluxGoalCompleted=String(goalCompleted);el.dataset.fluxGoalHold=String(Math.round(goalHeldMs));}
+  }
+  $('#flux-goal-start').onclick=startGoal;$('#flux-goal-again').onclick=startGoal;$('#flux-goal-exit').onclick=exitGoal;
   const point = (u, phi) => { const radial = Math.sqrt(Math.max(0, 1 - u * u)); return [state.a * radial * Math.cos(phi), R * u, R * radial * Math.sin(phi)]; };
   const geometryAt = (u, phi) => {
     const radial = Math.sqrt(Math.max(0, 1 - u * u));
@@ -227,6 +258,7 @@ export function mountFlux(container) {
       scene.label(hit.sign<0?'穿入 −':'穿出 +',[hit.point[0],hit.point[1]+.4,hit.point[2]],color,'flux-line',.3).renderOrder=26;
     }
     const signs=plan.crossings.map(hit=>hit.sign);
+    if(goalActive)goalEvaluation=evaluateFluxGoal({line:plan,enclosedFraction:fraction,normalizedFlux:total/UNIT});
     $('#flux-line-summary').textContent=signs.length===2?'同一条场线：一处穿入 −，一处穿出 +':state.sign>0?'内部正电荷：向外穿出 +':'内部负电荷：向内穿入 −';
     $('#flux-line-note').textContent=fraction===0?'外部源：整个面的正负贡献抵消，净通量为 0':fraction===1?`内部净电荷 ${state.sign>0?'+':'−'}Q₀，净通量 ${state.sign>0?'+':'−'}Q₀/ε₀`:'电荷球正在跨界，净通量随包入电荷连续改变';
     $('.stage').dataset.sourceX=String(state.x);$('.stage').dataset.lineCrossings=JSON.stringify(signs);$('.stage').dataset.flux=String(total/UNIT);
@@ -243,6 +275,7 @@ export function mountFlux(container) {
   scene.frameFn = time => {
     const elapsed = previousTime ? Math.min(0.08, (time - previousTime) / 1000) : 0; previousTime = time;
     if(source){const p=new THREE.Vector3(...source.pos).project(scene.camera),rect=scene.renderer.domElement.getBoundingClientRect();$('.stage').dataset.sourceScreen=JSON.stringify([rect.left+(p.x+1)*rect.width/2,rect.top+(1-p.y)*rect.height/2]);}
+    tickGoal(elapsed,time);
     if (!state.flowMoving || state.challenge) return;
     flowTime += elapsed;
     for (const item of flowGlyphs) {
@@ -405,5 +438,6 @@ export function mountFlux(container) {
   function dragEnd(event){if(!draggingSource)return;draggingSource=false;canvas.releasePointerCapture?.(event.pointerId);canvas.style.cursor='grab';scene.controls.enabled=true;rebuild();event.preventDefault();event.stopImmediatePropagation();}
   canvas.addEventListener('pointerdown',dragStart,true);canvas.addEventListener('pointermove',dragMove,true);canvas.addEventListener('pointerup',dragEnd,true);canvas.addEventListener('pointercancel',dragEnd,true);
   setView('front', false); setStep(2);
+  if(new URLSearchParams(location.search).get('challenge')==='one-in-one-out')startGoal();
   return () => { disposed = true; cancelAnimationFrame(pending); cancelAnimationFrame(playFrame); canvas.removeEventListener('pointerdown',dragStart,true);canvas.removeEventListener('pointermove',dragMove,true);canvas.removeEventListener('pointerup',dragEnd,true);canvas.removeEventListener('pointercancel',dragEnd,true);viewportObserver.disconnect(); motionPreference.removeEventListener('change', motionChanged); scene.dispose(); container.innerHTML = ''; };
 }

@@ -1,6 +1,8 @@
 document.body.classList.add('cinematic');
 document.querySelector('meta[name="theme-color"]')?.setAttribute('content','#080f19');
 const PAGES={
+ 'aim':{file:'aim.html',name:'瞄准自由靶'},
+ 'collector':{file:'wall.html',name:'壁面收集'},
  'particle':{file:'particle.html',name:'电场与运动',tag:'01 / 电场力怎样改变运动',title:'电子为什么转弯？',intro:'想把电子送到指定位置，需要改变什么？<br><strong>XY 看上下，XZ 看深度；再逐点看受力。</strong>'},
  'field':{file:'field.html',name:'电场的叠加',tag:'02 / 从整体形状到局部受力',title:'两个电荷，在同一处怎样相加？',intro:'沿两条连线看分场，再看它们的矢量和。<br><strong>拖动黄点，比较同一位置受到的作用。</strong>'},
  'slice':{file:'slice.html',name:'电势与等势面',tag:'03 / 用电势描述能量变化',title:'电势读数，代表什么？',intro:'向外移动做多少功？沿等势面走又怎样？<br><strong>看力与位移的夹角，理解能量变化。</strong>'},
@@ -13,7 +15,7 @@ const PAGES={
 };
 const key=document.body.dataset.page||'particle',page=PAGES[key]||PAGES.particle;
 document.title=`${page.name} · 静电场空间实验室`;
-const shortTitles={particle:'单粒子练习',beam:'电子束',field:'电场叠加',slice:'电势',flux:'电通量',wall:'事故与应用',charge:'充电与传播',engine:'电场叠加',analysis:'案例分析'};
+const shortTitles={particle:'单粒子练习',beam:'电子束',aim:'瞄准自由靶',collector:'壁面收集',field:'电场叠加',slice:'电势',flux:'电通量',wall:'事故与应用',charge:'充电与传播',engine:'电场叠加',analysis:'案例分析'};
 document.querySelector('#app').innerHTML=`<header class="topbar"><a href="index.html" class="brand"><span class="brand-mark" aria-hidden="true"></span><span>静电场实验室</span></a><nav class="nav" aria-label="实验">${['beam','field','slice','flux','wall','charge'].map(k=>[k,PAGES[k]]).map(([k,p])=>`<a href="${p.file}" ${k===key||(key==='analysis'&&k==='wall')||(key==='engine'&&k==='field')||(key==='particle'&&k==='beam')?'class="current" aria-current="page"':''}>${shortTitles[k]}</a>`).join('')}</nav></header><main><div class="page-intro"><h1>${shortTitles[key]||page.name}</h1></div><div id="experience"><div class="status">载入中…</div></div><div id="dialogue-area"></div></main><footer class="footer"><details><summary>资料与模型说明</summary><p><a href="https://openstax.org/books/university-physics-volume-2/pages/5-introduction" target="_blank" rel="noopener">公开教材 ↗</a>　<a href="https://www.youtube.com/watch?v=aXRTczANuIs" target="_blank" rel="noopener">视频参考 ↗</a>　<a href="https://github.com/syzhaoln-stack/electrostatic-space-lab" target="_blank" rel="noopener">源码与模型范围 ↗</a></p><p>粒子与场由模型计算；事故装置与放电过程为定性教学示意。照片来源见各案例。</p></details></footer>`;
 
 const container=document.querySelector('#experience');
@@ -21,6 +23,8 @@ try{
  let dispose;
  if(key==='beam'){const hero=document.createElement('div');hero.id='home-oscillation';document.querySelector('.page-intro').before(hero);const disposeHero=(await import('./home-field.js')).mountHomeField(hero);const disposeBeam=(await import('./beam-page.js')).mountBeam(container);dispose=()=>{disposeHero();disposeBeam?.()};}
  if(key==='engine')dispose=(await import('./engine-page.js')).mountEngine(container);
+ if(key==='aim')dispose=(await import('./aim-page.js')).mountAim(container);
+ if(key==='collector')dispose=(await import('./wall-page.js')).mountWall(container);
  if(key==='particle')dispose=(await import('./particle-page.js')).mountParticle(container);
  if(key==='field')dispose=(await import('./field-page.js')).mountField(container);
  if(key==='slice')dispose=(await import('./slice-page.js')).mountSlice(container);
@@ -28,6 +32,11 @@ try{
  if(key==='charge')dispose=(await import('./charge-page.js')).mountCharge(container);
  if(key==='wall'||key==='analysis')dispose=(await import('./risk.js')).mountRisk(container,{mode:key==='wall'?'wall':'analysis',caseId:new URLSearchParams(location.search).get('case')||undefined,onNavigate:(mode,id)=>{location.href=`${mode==='wall'?'cases':'analysis'}.html?case=${encodeURIComponent(id)}`}});
  window.addEventListener('pagehide',()=>dispose?.(),{once:true});
+ if(['beam','aim','collector'].includes(key)){
+  const related=document.createElement('nav');related.className='experiment-links';related.setAttribute('aria-label','继续实验');
+  related.innerHTML=[['beam','index.html','收集电子束','加速、转向，穿过接收孔'],['aim','aim.html','瞄准自由靶','靶也受电场力，同一刻释放'],['collector','wall.html','把粒子送上壁面','100 个粒子，落在同一片亮区']].filter(([id])=>id!==key).map(([,href,title,copy])=>`<a href="${href}"><span>${title} <b aria-hidden="true">↗</b></span><small>${copy}</small></a>`).join('');container.after(related);
+  if(key!=='beam')document.querySelector('.nav a[href="index.html"]').classList.add('current');
+ }
  document.body.dataset.ready='true';
 }catch(error){console.error(error);container.innerHTML='<div class="error">实验空间暂未载入。请刷新页面；三维实验需要支持 WebGL 的浏览器。<br>事故墙与 5W2H 分析可通过上方导航继续使用。</div>';document.body.dataset.ready='error';}
 if(key==='particle'){
