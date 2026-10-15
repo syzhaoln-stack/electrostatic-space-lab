@@ -1,0 +1,55 @@
+/* A quiet, dark teaching stage: light carries the physical relationships. */
+:root{color-scheme:dark;--bg:#080f19;--paper:#111d2b;--ink:#e7eff5;--muted:#a0b4c5;--line:#25374a;--teal:#67dce5;--teal-light:#12313b;--amber:#f4c277;--coral:#ff987b;--blue:#65c9fb;--radius:15px}
+body.cinematic{background:radial-gradient(ellipse at 32% 5%,#132333 0,transparent 48%),#080f19;color:var(--ink)}
+body.cinematic .topbar{background:#0a121ee8;border-color:#223245}
+body.cinematic .brand-mark{box-shadow:0 0 22px #67dce510}
+body.cinematic .nav{background:transparent}
+body.cinematic .nav a.current{background:#1b3544;color:#bcf8fb;box-shadow:inset 0 -2px #67dce5}
+body.cinematic .nav a:hover:not(.current){background:#152333;color:#dceaf3}
+body.cinematic h1{font-weight:600;letter-spacing:-1.2px}
+body.cinematic button{background:#132333;color:#dceaf3;border-color:#304556;transition:background .18s cubic-bezier(.2,.8,.2,1),border-color .18s cubic-bezier(.2,.8,.2,1)}
+body.cinematic button:hover{background:#203a4a;border-color:#558391}
+body.cinematic button:is(.active,[aria-pressed=true],[aria-selected=true]),body.cinematic .primary{background:#8de1e5;color:#08232c;border-color:#8de1e5}
+body.cinematic .primary:hover{background:#b3f2ef}
+body.cinematic select{background:#0d1b29;color:#dceaf3}
+body.cinematic :is(.panel,.formula-strip,.explain-layer,.learning,.readout,.prop-panel,.prop-chart-card,.prop-model,.prop-lesson p,.prop-probe,.prop-delay,.flux-explain,.flux-purpose,.flux-inference,.flux-total-card,.flux-patch-card,.flux-numerics){background:#111e2c;border-color:#293d4f;color:#dceaf3}
+body.cinematic :is(.readout,.prop-probe,.flux-total-card){background:#0c1927}
+body.cinematic :is(.propagation-lab,.prop-intro strong,.prop-lesson strong,.flux-explain strong,.flux-formula-map strong){color:#dceaf3}
+body.cinematic :is(.prop-intro p,.prop-control small,.prop-probe p,.prop-small,.prop-lesson p,.prop-model p,.prop-chart-card>p,.flux-explain p,.flux-purpose p){color:#a0b4c5}
+body.cinematic :is(.prop-delay strong,.flux-inference>strong,.flux-sum strong,.prop-equation){color:#94e1dd}
+body.cinematic .status{background:#12323b;color:#a8ede7}
+body.cinematic .status.success{background:#13372d;color:#b0e9c8}
+body.cinematic .status.miss{background:#3a2c18;color:#f0d299}
+body.cinematic :is(.stage-wrap,.prop-stage-wrap,.spark-stage-wrap){background:#07111d;border-color:#2c4255;box-shadow:0 18px 55px #00000024}
+body.cinematic :is(.pill,.view-switch,.hint-chip,.probe-detail,.flux-motion-tools,.flux-surface-note,.flux-scene-note){background:#0b1929db;border-color:#2a4358;color:#a7bfce;backdrop-filter:blur(8px)}
+body.cinematic .scene-label strong{color:#e5f2f8}
+body.cinematic .view-switch button.active{color:#b5f7fa;background:#254551}
+body.cinematic .stage-bottom .legend{color:#abc1cf}
+body.cinematic .field-modebar>span,body.cinematic .field-dynamic-note{color:#93adbf}
+body.cinematic .field-switches label{background:#132735;border-color:#2b4859}
+body.cinematic .field-switches small{color:#a0b8c7}
+body.cinematic .field-source-tools{border-color:#2b4051}
+body.cinematic .field-switches input{accent-color:#67dce5}
+body.cinematic .field-v3 .probe-detail{background:#071421b8;border-color:#243e52}
+body.cinematic .flux-steps button{background:#142333;border-color:#2b4051;color:#b5c9d6}
+body.cinematic .flux-steps button[aria-pressed=true]{background:#234350;color:#d0fbf9}
+body.cinematic .flux-word-equation{background:#30291e;color:#edce9b}
+body.cinematic .flux-purpose>button{background:#24404c;color:#c3f1f0}
+body.cinematic :is(.concept-lead,.dialogue-text p.speaking){background:#13333b;color:#c5e7ed}
+body.cinematic .risk-root{color:#e1ebf3;--rw-teal:#67dce5;--rw-line:#2b3f51;--rw-muted:#a0b4c5}
+body.cinematic .risk-root a,body.cinematic :is(.rw-small-label,.rw-section-heading>span,.rw-card-meta span,.rw-card-copy strong,.rw-finding>span){color:#8cdddd}
+body.cinematic :is(.rw-photo-card,.rw-gallery figure,.rw-thumbnails button,.rw-observation,.rw-model-reading,.rw-step-buttons button,.rw-seven button,.rw-answer,.rw-analysis textarea,.rw-photo-dialog){background:#111e2c;color:#dceaf3;border-color:#2c4052}
+body.cinematic :is(.rw-photo-open,.rw-card-photo,.rw-model-host){background:#07111d}
+body.cinematic :is(.rw-card-copy p,.rw-gallery figcaption>p,.rw-observation>p,.rw-step-note,.rw-toggle small,.rw-formula>p,.rw-evidence summary,.rw-note-label,.rw-photo-dialog p){color:#b2c4d1}
+body.cinematic :is(.rw-card-meta,.rw-wall-note,.rw-section-heading>p,.rw-return,.rw-answer>small,.rw-model-limit,.rw-evidence){color:#9cb2c2}
+body.cinematic .rw-formula{background:#122f39}
+body.cinematic .rw-formula>strong{color:#d0eff2}
+body.cinematic .rw-seven [aria-selected=true],body.cinematic .rw-step-buttons [aria-pressed=true]{background:#234552;color:#c9fbfa}
+body.cinematic .rw-photo-card:hover{box-shadow:0 14px 35px #0004;border-color:#527383}
+body.cinematic .rw-card-copy strong{border-color:#2c4052}
+body.cinematic :is(.rw-filters button,.rw-return button,.rw-case-bottom button){color:#8cdddd}
+body.cinematic .rw-analysis textarea::placeholder{color:#7891a6}
+body.cinematic .footer{background:#080f19}
+@media(prefers-reduced-motion:reduce){body.cinematic *,body.cinematic *:before,body.cinematic *:after{transition:none!important;animation:none!important;scroll-behavior:auto!important}}
+
+body.cinematic .rw-filters button[aria-pressed=true]{color:#08232c;background:#8de1e5}body.cinematic :is(.rw-change-note,.rw-formula>span){color:#90dddd}

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { enclosedSphereFraction } from './flux-physics.js';
+import { enclosedSphereFraction, rayEllipsoidCrossings } from './flux-physics.js';
 import { gaussianFlux, CONSTANTS } from './physics.js';
 test('finite sphere overlap is continuous, monotonic and bounded', () => {
   assert.equal(enclosedSphereFraction(2.1, 0.42, 3.7), 0);
@@ -31,5 +31,27 @@ test('deforming closed surface preserves flux', () => {
   for (const a of [1.1, 1.6, 2.1, 2.7, 3.3]) {
     const flux = gaussianFlux([0, 0, 0], [a, 2.1, 2.1], [{ pos: [0, 0, 0], radius: 0.42, Q: 0.1 }], 96, 192) / unit;
     assert.ok(Math.abs(flux - 1) < 0.0001, `a=${a}: flux ${flux}`);
+  }
+});
+test('outside radial line has paired entry and exit; inside line exits once', () => {
+  const outside = rayEllipsoidCrossings([-3.7, 0, 0], [1, 0, 0], [2.1, 2.1, 2.1]);
+  assert.deepEqual(outside.map(hit => hit.sign), [-1, 1]);
+  assert.ok(Math.abs(outside[0].point[0] + 2.1) < 1e-12);
+  assert.ok(Math.abs(outside[1].point[0] - 2.1) < 1e-12);
+  const inside = rayEllipsoidCrossings([0, 0, 0], [1, 0, 0], [3.3, 2.1, 2.1]);
+  assert.equal(inside.length, 1); assert.equal(inside[0].sign, 1);
+  assert.ok(Math.abs(inside[0].point[0] - 3.3) < 1e-12);
+  assert.equal(rayEllipsoidCrossings([-3.7, 0, 0], [-1, 0, 0], [2.1, 2.1, 2.1]).length, 0);
+});
+test('hidden-charge measurement distinguishes net sign without implying an empty interior', () => {
+  const unit = 0.1e-12 / CONSTANTS.epsilon0;
+  const arrangements = [
+    [{ pos: [0, 0, 0], radius: 0.42, Q: 0.1 }],
+    [{ pos: [0, 0, 0], radius: 0.42, Q: -0.1 }],
+    [{ pos: [-0.7, 0, 0], radius: 0.42, Q: 0.1 }, { pos: [0.7, 0, 0], radius: 0.42, Q: -0.1 }],
+  ];
+  for (let i = 0; i < arrangements.length; i++) {
+    const measured = gaussianFlux([0, 0, 0], [2.1, 2.1, 2.1], arrangements[i], 96, 192) / unit;
+    assert.ok(Math.abs(measured - [1, -1, 0][i]) < 0.0001);
   }
 });
