@@ -1,5 +1,6 @@
 import {THREE} from './scene.js';
 import {fieldAt} from './physics.js';
+import {POTENTIAL_LEVELS,equipotentialProfile} from './potential-surfaces.js';
 
 // Three regular sampling layers show the true 3D sum. Arrow length is compressed
 // with one fixed scale; no field-line density or animation speed encodes charge.
@@ -23,4 +24,22 @@ export function drawPotentialTotalField(scene,sources){
   });
   shafts.instanceMatrix.needsUpdate=true;heads.instanceMatrix.needsUpdate=true;shafts.frustumCulled=heads.frustumCulled=false;g.add(shafts,heads);
   return samples.length;
+}
+
+/** A surface of revolution of the numerical V=rho,y contour. Only the 0 V
+ * member is a plane; no nonzero two-source layer is represented by a sphere. */
+export function drawEquipotentialLayers(scene){
+ const layers=[],group=scene.layer('equipotentials');
+ for(const value of POTENTIAL_LEVELS){
+  const color=value>0?'#bf927b':value<0?'#5899bd':'#66aba9',profile=equipotentialProfile(value),g=new THREE.Group();group.add(g);
+  const geometry=value?new THREE.LatheGeometry(profile.points.map(p=>new THREE.Vector2(...p)),56):new THREE.PlaneGeometry(10,10);
+  const mesh=new THREE.Mesh(geometry,new THREE.MeshBasicMaterial({color,transparent:true,opacity:.025,side:THREE.DoubleSide,depthWrite:false}));if(!value)mesh.rotation.x=-Math.PI/2;mesh.userData={potentialLevel:value,pickable:false};g.add(mesh);
+  const wirePositions=[];
+  const seg=(a,b)=>wirePositions.push(...a,...b);
+  if(value){for(let j=0;j<8;j++){const a=j*Math.PI/4;for(let i=1;i<profile.points.length;i++){const [r0,y0]=profile.points[i-1],[r1,y1]=profile.points[i];seg([r0*Math.cos(a),y0,r0*Math.sin(a)],[r1*Math.cos(a),y1,r1*Math.sin(a)]);}}
+   for(const k of [12,24,36,48,60]){const [r,y]=profile.points[k];for(let j=0;j<64;j++){const a=j*Math.PI/32,b=(j+1)*Math.PI/32;seg([r*Math.cos(a),y,r*Math.sin(a)],[r*Math.cos(b),y,r*Math.sin(b)]);}}
+  }else{for(const x of [-5,0,5])seg([x,0,-5],[x,0,5]);for(const z of [-5,0,5])seg([-5,0,z],[5,0,z]);}
+  const wireGeometry=new THREE.BufferGeometry();wireGeometry.setAttribute('position',new THREE.Float32BufferAttribute(wirePositions,3));const wire=new THREE.LineSegments(wireGeometry,new THREE.LineBasicMaterial({color,transparent:true,opacity:.16,depthWrite:false}));g.add(wire);layers.push({value,mesh,wire});
+ }
+ return {select(value,progress=0,glow=0){for(const layer of layers){const active=layer.value===value;layer.mesh.userData.pickable=active;layer.mesh.material.opacity=active?.016+.060*progress+.14*glow:.004;layer.wire.material.opacity=active?.12+.18*progress+.24*glow:.055;layer.mesh.material.color.set(active?'#7dd8d0':layer.value>0?'#bf927b':layer.value<0?'#5899bd':'#66aba9');layer.wire.material.color.set(active?'#a1f0df':layer.value>0?'#bf927b':layer.value<0?'#5899bd':'#66aba9');layer.mesh.renderOrder=active?2:0;}},count:layers.length};
 }

@@ -9,6 +9,7 @@ func _run()->void:
 		studio._load_case(id);await process_frame
 		for step in range(4):
 			studio.phase=step;studio.current.bonded=false;studio.current.vaporVisible=true;studio._apply_state()
+			_check(studio.attention_meshes.size()>0,id+" highlights a real component at phase "+str(step))
 			_check(studio._can_spark()==(step>=3 if id=="glenpool" else step>=2),id+" correct spark phase "+str(step))
 			_check(studio.flames[0].visible==(step==3),id+" correct ignition phase "+str(step))
 		studio.phase=3;studio.current.bonded=true;studio._apply_state()

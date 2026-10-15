@@ -1,8 +1,8 @@
 import * as THREE from 'three';
 import { FieldScene } from './scene.js';
 import { CONSTANTS, fieldAt, gaussianFlux } from './physics.js';
-import { enclosedSphereFraction, rayEllipsoidCrossings } from './flux-physics.js';
-import { buildFluxJourney, journeySample } from './flux-journey.js';
+import { enclosedSphereFraction } from './flux-physics.js';
+import { buildFluxLine } from './flux-journey.js';
 
 const R = 2.1, SOURCE_RADIUS = 0.42, Q0 = 0.1;
 const UNIT = Q0 * 1e-12 / CONSTANTS.epsilon0;
@@ -11,7 +11,7 @@ const norm = vector => Math.hypot(...vector);
 const clean = (value, digits = 2) => (Math.abs(value) < 0.5 * 10 ** -digits ? 0 : value).toFixed(digits);
 const STEPS = [
   { title: '先看红球周围的方向', text: '红球带正电，周围的电场朝外。短箭头沿着场线移动，只帮助你看方向。再加一个包围面，看看线在哪里穿过它。' },
-  { title: '把电荷慢慢移进去', text: '拖动红球的位置，看看包住的电荷怎样增加。所有小片的贡献相加，会跟着怎样变化？' },
+  { title: '把电荷慢慢移进去', text: '拖动电荷位置，看看包住的电荷怎样增加。所有小片的贡献相加，会跟着怎样变化？' },
   { title: '换一种形状，结果呢？', text: '电荷留在中央，只把包围面压扁、拉长。各处的方向和大小会变，总和会不会变？' },
 ];
 const MYSTERIES = [
@@ -28,15 +28,10 @@ export function mountFlux(container) {
   }
   container.innerHTML = `<div class="flux-experience">
     <div class="flux-steps" aria-label="逐步理解电通量">
-      <button data-flux-step="1" aria-pressed="true"><span>穿入与穿出</span></button>
-      <button data-flux-step="2" aria-pressed="false"><span>移入电荷</span></button>
+      <button data-flux-step="2" aria-pressed="false"><span>移动电荷</span></button>
       <button data-flux-step="3" aria-pressed="false"><span>改变形状</span></button>
     </div>
-    <section class="flux-journey-bar" aria-label="沿场线观察穿入和穿出">
-
-      <div class="flux-journey-actions"><div class="flux-source-choice" aria-label="场线从哪里出发"><button data-journey-source="outside" aria-pressed="true">源在外面</button><button data-journey-source="inside" aria-pressed="false">源在里面</button></div><button id="flux-journey-start" class="primary">第一视角穿过曲面</button></div>
-      <div class="flux-journey-controls" id="flux-journey-controls" hidden><div><button data-journey-view="follow" aria-pressed="true">第一视角</button><button data-journey-view="overview" aria-pressed="false">看全景</button><button id="flux-journey-pause">暂停</button><button id="flux-journey-replay">重播</button><button id="flux-journey-close">结束跟随</button></div><label for="flux-journey-progress">沿线位置<input id="flux-journey-progress" type="range" min="0" max="1" step="0.001" value="0" aria-label="沿所选场线移动观察位置"></label></div>
-    </section>
+    <div class="flux-overview-tools"><span id="flux-drag-hint">拖动红球，沿水平移入或移出</span><div><button data-flux-placement="outside">移到外部</button><button data-flux-placement="inside">移到内部</button><button data-flux-sign="1" aria-pressed="true">正电荷 +</button><button data-flux-sign="-1" aria-pressed="false">负电荷 −</button></div></div>
     <div class="lab-layout flux-lab">
       <div class="stage-wrap">
         <div class="stage" aria-label="可旋转的闭合面与带电球三维模型"></div>
@@ -44,7 +39,7 @@ export function mountFlux(container) {
           <div class="view-switch"><button class="active" data-flux-view="iso">空间</button><button data-flux-view="front">正视</button><button data-flux-view="top">俯视</button></div></div>
         <div class="flux-scene-note" id="flux-scene-note">电荷在外面，闭合面仍有穿入、穿出的贡献。</div>
         <div class="flux-stage-key" id="flux-crossing-key" hidden><span class="flux-in">● 穿入：负贡献</span><span class="flux-out">● 穿出：正贡献</span></div>
-        <div class="flux-journey-hud" id="flux-journey-hud" hidden><div class="flux-journey-phase"><span id="flux-journey-phase-label">沿线观察</span><strong id="flux-journey-phase-title">尚未进入</strong><p id="flux-journey-phase-copy"></p><div class="flux-journey-counts"><span class="flux-in" id="flux-journey-in">穿入 0 次</span><span class="flux-out" id="flux-journey-out">穿出 0 次</span></div></div><svg id="flux-journey-map" viewBox="0 0 240 130" role="img" aria-label="所选场线的侧面示意，亮点表示当前观察位置"><ellipse id="flux-map-surface" cx="132" cy="65" rx="59" ry="59"/><path id="flux-map-line"/><circle id="flux-map-source" r="6"/><g id="flux-map-crossings"></g><circle id="flux-map-eye" r="4.5"/><text x="9" y="120">亮点 = 当前视角</text><text x="99" y="16">假想面</text></svg></div>
+        <div class="flux-line-readout"><strong id="flux-line-summary">一条场线：穿入 −，穿出 +</strong><span id="flux-line-note">总通量由整个面的面积积分计算</span></div>
         <div class="stage-bottom"><div class="flux-motion-tools"><button id="flux-flow-toggle" aria-pressed="true">暂停方向标记</button><span>标记速度没有物理含义</span></div><span class="flux-surface-note" id="flux-surface-note">拖动旋转观察</span></div>
       </div>
       <aside class="panel flux-panel">
@@ -53,7 +48,7 @@ export function mountFlux(container) {
         <button id="flux-add-surface" class="primary flux-add-surface">显示包围面</button>
         <div id="flux-patch-controls" class="flux-patch-controls" hidden><button data-flux-patch="left" class="active">看左边一片</button><button data-flux-patch="right">看右边一片</button></div>
         <div id="flux-move-controls" hidden>
-          <div class="control"><label for="flux-source-x">红球的位置 <output id="flux-source-label">完全在外面</output></label><input id="flux-source-x" type="range" min="-3.7" max="0" step="0.01" value="-3.7"><div class="range-ends"><span>在外面</span><span>到中央</span></div></div>
+          <div class="control"><label for="flux-source-x">电荷位置 <output id="flux-source-label">完全在外面</output></label><input id="flux-source-x" type="range" min="-3.7" max="3.7" step="0.01" value="-3.7"><div class="range-ends"><span>左侧外部</span><span>右侧外部</span></div></div>
           <button id="flux-play" class="primary">看它移进去</button>
         </div>
         <div id="flux-shape-controls" hidden>
@@ -64,7 +59,7 @@ export function mountFlux(container) {
           <div class="flux-challenge-actions"><button id="flux-measure" class="primary">① 测净通量</button><button id="flux-reveal" disabled>② 揭晓内部</button></div>
           <div id="flux-inference" class="flux-inference" hidden></div>
           <button id="flux-new-mystery" class="text-button">换一组未知电荷</button>
-          <button id="flux-exit-mystery" class="text-button">返回三步观察</button>
+          <button id="flux-exit-mystery" class="text-button">返回观察</button>
         </div>
         <div class="flux-patch-card" id="flux-patch-card" hidden>
           <div class="flux-small-label">黄色框选中的这一片</div><strong id="flux-patch-direction">—</strong>
@@ -93,7 +88,7 @@ export function mountFlux(container) {
       <div class="flux-formula-map"><div><span>每一小片</span><strong>ΔΦ ≈ (E · n) ΔA</strong><p>E 是此处电场；n 是该面片向外的单位方向。点乘只留下垂直分量。对有限大小的面片，这是小面片近似。</p></div><div><span>整个闭合面</span><strong>Φ = ∮<sub>S</sub> E · n dA = Q<sub>内</sub> / ε₀</strong><p>∮ 表示沿完整闭合面，把无限小面片的贡献相加；不是沿边缘走一圈，也不是把一个平面截面积相加。</p></div></div>
       <p><strong>等号两边分别是什么？</strong>左边是表面上电场贡献的总和；右边是这个面包住的净电荷除以真空介电常数 ε₀。外部电荷会改变表面各处的电场，却不改变这个总和。</p>
       <div id="flux-numerics" class="flux-numerics"></div>
-      <p><strong>模型与适用范围：</strong>红球是半径 0.42 mm、总电荷 Q₀ = +0.10 pC 的均匀带电绝缘实心球；移动是在比较一组静电状态。第 2 步的包围面是半径 2.10 mm 的球，穿越时按两球相交体积计算内部电荷，第 3 步改变为椭球。测量挑战会切换正电荷、负电荷和等量异号电荷；隐藏内部只改变显示，不改变电场计算。表面取样独立计算积分，因此有离散误差。高斯定理对任意闭合面成立；要用它直接求某处 E，通常还需要足够的对称性。</p>
+      <p><strong>模型与适用范围：</strong>红球是半径 0.42 mm、总电荷为 ±Q₀，Q₀ = 0.10 pC 的均匀带电绝缘实心球；移动是在比较一组静电状态。“移动电荷”中的包围面是半径 2.10 mm 的球，穿越时按两球相交体积计算内部电荷，“改变形状”中电荷固定中央，包围面改变为椭球。测量挑战会切换正电荷、负电荷和等量异号电荷；隐藏内部只改变显示，不改变电场计算。表面取样独立计算积分，因此有离散误差。高斯定理对任意闭合面成立；要用它直接求某处 E，通常还需要足够的对称性。</p>
       <p>面片颜色固定以 |E·n| = 500 V/m 为满刻度，超出后饱和；改变形状不自动换色标。<a href="https://openstax.org/books/university-physics-volume-2/pages/6-3-applying-gausss-law" target="_blank" rel="noopener">教材依据：高斯定理与对称性 ↗</a></p>
     </details>
   </div>`;
@@ -108,11 +103,10 @@ export function mountFlux(container) {
   const $ = selector => container.querySelector(selector);
   const scene = new FieldScene($('.stage'), { extent: 6 });
   // A narrow screen needs a wider field of view so the external source stays visible.
-  const fitViewport = () => { scene.camera.fov = $('.stage').dataset.journeyCamera === 'follow' ? 90 : $('.stage').clientWidth < 600 ? 46 : 38; scene.camera.updateProjectionMatrix(); };
+  const fitViewport = () => { scene.camera.fov = $('.stage').clientWidth < 600 ? 52 : 38; scene.camera.updateProjectionMatrix(); };
   const viewportObserver = new ResizeObserver(fitViewport); viewportObserver.observe($('.stage')); fitViewport();
   const motionPreference = matchMedia('(prefers-reduced-motion: reduce)');
-  const state = { step: 1, x: -3.7, a: R, surfaceVisible: false, flowMoving: !motionPreference.matches, challenge: false, mystery: 0, measured: false, revealed: false };
-  const journey = { active: false, mode: 'outside', view: 'follow', progress: 0, playing: false, plan: null, eye: null };
+  const state = { step: 2, x: -3.7, sign: 1, a: R, surfaceVisible: true, flowMoving: !motionPreference.matches, challenge: false, mystery: 0, measured: false, revealed: false };
   let source, sources, selected = { u: 1 / NU, phi: Math.PI + Math.PI / NP };
   let pending = 0, playFrame = 0, disposed = false, playing = false;
   let flowGlyphs = [], flowTime = 0, previousTime = 0, measuredTotal = 0;
@@ -129,9 +123,8 @@ export function mountFlux(container) {
     return { ...patch, E, En, area: patch.magnitude * du * dphi * 1e-6, contribution: En * patch.magnitude * du * dphi * 1e-6, u, phi };
   };
   function setView(mode, smooth = true) {
-    if (journey.active) stopJourney(false);
     scene.controls.minDistance = 5;
-    const focusX = state.surfaceVisible ? -0.5 : state.x;
+    const focusX = state.surfaceVisible ? 0 : state.x;
     const position = mode === 'front' ? [focusX, 0, 12] : mode === 'top' ? [focusX, 12, 0.001] : [focusX - 6.5, 4.5, 10.7];
     scene.controls.target.set(focusX, 0, 0);
     if (!smooth || matchMedia('(prefers-reduced-motion: reduce)').matches) { scene.camera.position.set(...position); scene.controls.update(); }
@@ -183,23 +176,17 @@ export function mountFlux(container) {
       const patch = patchAt(u, i * Math.PI / 4 + 0.12);
       scene.arrow(patch.pos, patch.E, patch.En >= 0 ? '#ffc477' : '#76d3ff', 0.43, 'surface-arrows');
     }
-    for (const name of ['surface', 'wire', 'surface-arrows']) scene.layer(name).visible = state.surfaceVisible;
+    for (const name of ['surface', 'wire']) scene.layer(name).visible = state.surfaceVisible;scene.layer('surface-arrows').visible=false;
   }
 
   function buildFieldFlow() {
     scene.clearLayer('field-flow'); scene.clearLayer('field-crossings'); scene.clearLayer('field-glyphs'); flowGlyphs = [];
     if (state.challenge) { updateMotionButton(); return; }
     const directions = [];
-    const count = state.surfaceVisible ? 26 : 38;
+    const count = 24;
     for (let i = 0; i < count; i++) {
       const u = 1 - 2 * (i + 0.5) / count, angle = i * Math.PI * (3 - Math.sqrt(5)), radial = Math.sqrt(1 - u * u);
       directions.push([radial * Math.cos(angle), u, radial * Math.sin(angle)]);
-    }
-    // A few additional rays crossing the surface make entry/exit pairs legible.
-    // They are selected illustrations, never used as flux weights or a line count.
-    if (state.surfaceVisible && state.x < -R) for (const target of [[0, 0, 0], [0, 0.72, 0], [0, -0.72, 0], [0, 0, 0.72], [0, 0, -0.72]]) {
-      const direction = target.map((value, index) => value - source.pos[index]), length = norm(direction);
-      directions.push(direction.map(value => value / length));
     }
     directions.forEach((direction, index) => {
       const start = SOURCE_RADIUS + 0.025;
@@ -214,26 +201,37 @@ export function mountFlux(container) {
       }
       if (end <= start + 0.12) return;
       const along = distance => source.pos.map((value, axis) => value + direction[axis] * distance);
-      scene.line([along(start), along(end)], '#f0ac71', 'field-flow', state.surfaceVisible ? 0.35 : 0.5);
+      scene.line([along(start), along(end)], state.sign>0?'#f0ac71':'#78cbef', 'field-flow', 0.11);
       for (let markerIndex = 0; markerIndex < 2; markerIndex++) {
-        const glyph = new THREE.Mesh(new THREE.ConeGeometry(0.043, 0.14, 5), new THREE.MeshBasicMaterial({ color: '#ffd094', transparent: true, opacity: 0.86, depthWrite: false }));
-        glyph.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), new THREE.Vector3(...direction));
+        const glyph = new THREE.Mesh(new THREE.ConeGeometry(0.043, 0.14, 5), new THREE.MeshBasicMaterial({ color: '#ffd094', transparent: true, opacity: 0.23, depthWrite: false }));
+        glyph.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), new THREE.Vector3(...direction.map(v=>v*state.sign)));
         const offset = (index * 0.173 + markerIndex * 0.5) % 1;
         glyph.position.set(...along(start + offset * (end - start))); scene.layer('field-glyphs').add(glyph);
         flowGlyphs.push({ glyph, along, start, end, offset });
       }
-      if (state.surfaceVisible) {
-        for (const hit of rayEllipsoidCrossings(source.pos, direction, [state.a, R, R])) {
-          if (hit.t < start || hit.t > end || !hit.sign) continue;
-          const color = hit.sign > 0 ? '#ffd07b' : '#7cdbff';
-          const dot = new THREE.Mesh(new THREE.SphereGeometry(0.058, 10, 8), new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.95, depthWrite: false }));
-          dot.position.set(...hit.point); dot.renderOrder = 3;
-          dot.userData = { pickable: true, crossing: true, point: hit.point, sign: hit.sign };
-          scene.layer('field-crossings').add(dot);
-        }
-      }
     });
     updateMotionButton();
+  }
+  function buildSelectedLine(fraction,total){
+    scene.clearLayer('flux-line');
+    $('.flux-line-readout').hidden=state.challenge;
+    $('#flux-drag-hint').textContent=state.step===3?'形状对照：电荷固定在中央':state.sign>0?'拖动红球，沿水平移入或移出':'拖动蓝球，沿水平移入或移出';
+    if(state.challenge)return;
+    const plan=buildFluxLine(source.pos,SOURCE_RADIUS,[state.a,R,R],state.sign),at=t=>plan.origin.map((value,i)=>value+plan.direction[i]*t);
+    const line=scene.line([at(plan.start),at(plan.end)],'#fff0bc','flux-line',1);line.material.depthTest=false;line.renderOrder=22;
+    const direction=plan.direction.map(value=>value*state.sign);
+    for(const f of [.18,.45,.73])visibleArrow(at(plan.start+(plan.end-plan.start)*f),direction,'#ffe0a0',.29,'flux-line');
+    for(const hit of plan.crossings){
+      const color=hit.sign<0?'#7cdbff':'#ffd07b';
+      const marker=new THREE.Mesh(new THREE.SphereGeometry(.105,18,12),new THREE.MeshBasicMaterial({color,depthTest:false}));marker.position.set(...hit.point);marker.renderOrder=25;marker.userData={pickable:true,crossing:true,point:hit.point,sign:hit.sign};scene.layer('flux-line').add(marker);
+      scene.label(hit.sign<0?'穿入 −':'穿出 +',[hit.point[0],hit.point[1]+.4,hit.point[2]],color,'flux-line',.3).renderOrder=26;
+    }
+    const signs=plan.crossings.map(hit=>hit.sign);
+    $('#flux-line-summary').textContent=signs.length===2?'同一条场线：一处穿入 −，一处穿出 +':state.sign>0?'内部正电荷：向外穿出 +':'内部负电荷：向内穿入 −';
+    $('#flux-line-note').textContent=fraction===0?'外部源：整个面的正负贡献抵消，净通量为 0':fraction===1?`内部净电荷 ${state.sign>0?'+':'−'}Q₀，净通量 ${state.sign>0?'+':'−'}Q₀/ε₀`:'电荷球正在跨界，净通量随包入电荷连续改变';
+    $('.stage').dataset.sourceX=String(state.x);$('.stage').dataset.lineCrossings=JSON.stringify(signs);$('.stage').dataset.flux=String(total/UNIT);
+    const screen=new THREE.Vector3(...source.pos).project(scene.camera),rect=scene.renderer.domElement.getBoundingClientRect();
+    if(rect){$('.stage').dataset.sourceScreen=JSON.stringify([rect.left+(screen.x+1)*rect.width/2,rect.top+(1-screen.y)*rect.height/2]);}
   }
   function updateMotionButton() {
     $('#flux-flow-toggle').textContent = state.challenge ? '测量时显示静态方向' : state.flowMoving ? '暂停方向标记' : '播放方向标记';
@@ -244,15 +242,11 @@ export function mountFlux(container) {
   }
   scene.frameFn = time => {
     const elapsed = previousTime ? Math.min(0.08, (time - previousTime) / 1000) : 0; previousTime = time;
-    if (journey.active) {
-      if (journey.playing) { journey.progress = Math.min(1, journey.progress + elapsed / (journey.mode === 'outside' ? 15 : 10)); if (journey.progress === 1) journey.playing = false; }
-      updateJourney();
-      return;
-    }
+    if(source){const p=new THREE.Vector3(...source.pos).project(scene.camera),rect=scene.renderer.domElement.getBoundingClientRect();$('.stage').dataset.sourceScreen=JSON.stringify([rect.left+(p.x+1)*rect.width/2,rect.top+(1-p.y)*rect.height/2]);}
     if (!state.flowMoving || state.challenge) return;
     flowTime += elapsed;
     for (const item of flowGlyphs) {
-      const phase = (flowTime * 0.17 + item.offset) % 1;
+      const raw = (flowTime * 0.17 + item.offset) % 1, phase = state.sign>0?raw:1-raw;
       item.glyph.position.set(...item.along(item.start + phase * (item.end - item.start)));
     }
     $('.stage').dataset.directionPhase = String(flowTime);
@@ -269,7 +263,7 @@ export function mountFlux(container) {
   function rebuild() {
     if (disposed) return;
     scene.clearLayer('charges'); scene.clearLayer('source-guide'); scene.clearLayer('mystery');
-    source = { id: 'Q', label: 'Q₀', pos: [state.x, 0, 0], radius: SOURCE_RADIUS, Q: Q0 }; scene.charge(source);
+    source = { id: 'Q', label: 'Q₀', pos: [state.x, 0, 0], radius: SOURCE_RADIUS, Q: Q0 * state.sign }; scene.charge(source);
     sources = [source];
     if (state.challenge) {
       sources = MYSTERIES[state.mystery].sources.map((item, index) => ({ ...item, radius: SOURCE_RADIUS, id: `hidden-${index}`, label: 'Q₀' }));
@@ -280,7 +274,7 @@ export function mountFlux(container) {
     scene.layer('charges').traverse(object => { if (object.isSprite) { object.renderOrder = 25; object.scale.multiplyScalar(1.4); } });
     // Chosen parameter path, not a field line or a particle trajectory.
     if (state.step === 2 && !state.challenge) {
-      const guide = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(-3.7, -0.65, 0), new THREE.Vector3(0, -0.65, 0)]), new THREE.LineDashedMaterial({ color: '#61859c', dashSize: 0.09, gapSize: 0.07 })); guide.computeLineDistances(); scene.layer('source-guide').add(guide);
+      const guide = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(-3.7, -0.65, 0), new THREE.Vector3(3.7, -0.65, 0)]), new THREE.LineDashedMaterial({ color: '#61859c', dashSize: 0.09, gapSize: 0.07 })); guide.computeLineDistances(); scene.layer('source-guide').add(guide);
     }
     surface();
     buildFieldFlow();
@@ -289,116 +283,26 @@ export function mountFlux(container) {
     const { positive, negative } = integrateSigns();
     $('#flux-total').textContent = clean(total / UNIT); $('#flux-total').dataset.value = String(total / UNIT);
     $('#flux-outward').textContent = `+${clean(positive / UNIT)}`; $('#flux-inward').textContent = clean(negative / UNIT);
-    $('#flux-enclosed').textContent = `${clean(fraction * 100, 0)}%`; $('#flux-enclosed').dataset.fraction = String(fraction); $('#flux-meter-fill').style.width = `${fraction * 100}%`;
+    $('#flux-enclosed').textContent = `${state.sign>0?'+':'−'}${clean(fraction * 100, 0)}% Q₀`; $('#flux-enclosed').dataset.fraction = String(fraction); $('#flux-meter-fill').style.width = `${fraction * 100}%`;
     const location = fraction === 0 ? '完全在外面' : fraction === 1 ? '完全在里面' : '正在穿过包围面'; $('#flux-source-label').textContent = location;
     $('#flux-scene-title').textContent = state.surfaceVisible ? '场线在哪里穿过包围面？' : '先看电场朝哪里';
-    $('#flux-scene-pill').textContent = state.surfaceVisible ? '亮点是交点 · 不靠数点求通量' : '方向标记 · 非电子';
+    $('#flux-scene-pill').textContent = '所选场线 · 交点不等于通量计数';
     $('#flux-surface-note').textContent = state.surfaceVisible ? '可点亮点或表面 · 假想面不挡场' : '拖动旋转 · 电场向四周指向外';
     $('#flux-crossing-key').hidden = !state.surfaceVisible;
-    $('#flux-patch-card').hidden = !state.surfaceVisible;
+    $('#flux-patch-card').hidden = true;scene.layer('selected').visible=false;
     $('#flux-scene-note').textContent = !state.surfaceVisible ? '正电荷的电场向外；沿短箭头看方向。' : state.step === 3 ? '形状在变，包住的电荷没有变。' : fraction === 0 ? '沿同一条线看：先蓝点穿入，再橙点穿出。' : fraction === 1 ? '电荷在里面；场线从里面向外穿出。' : `红球逐渐进入：现在包住 ${clean(fraction * 100, 0)}% 的电荷。`;
-    $('#flux-status').textContent = state.step === 1 ? state.surfaceVisible ? '选一条确实穿过这个面的线：先穿入，再穿出。另一些场线完全不经过这个面。看一对蓝、橙交点，再比较两片。' : '先看方向，再加上包围面。这个面只是我们选择的测量边界，不是实体外壳。' : state.step === 3 ? '包住的电荷始终为 100%，总通量始终约为 1。局部变了，总和没有变。' : fraction === 0 ? '包住 0% 电荷 → 总通量约为 0。正负抵消，不代表表面没有电场。' : fraction === 1 ? '包住 100% 电荷 → 总通量约为 1。电荷球继续在内部移动，总和仍不变。' : `包住 ${clean(fraction * 100, 0)}% 电荷 → 总通量约为 ${clean(total / UNIT)}。假想面不会挡住红球。`;
+    $('#flux-status').textContent = state.step === 1 ? state.surfaceVisible ? '选一条确实穿过这个面的线：先穿入，再穿出。另一些场线完全不经过这个面。看一对蓝、橙交点，再比较两片。' : '先看方向，再加上包围面。这个面只是我们选择的测量边界，不是实体外壳。' : state.step === 3 ? `包住的电荷始终为 ${state.sign>0?'+':'−'}Q₀，总通量始终约为 ${state.sign}。局部变了，总和没有变。` : fraction === 0 ? '包住 0% 电荷 → 总通量约为 0。正负抵消，不代表表面没有电场。' : fraction === 1 ? `包住全部电荷 → 总通量约为 ${state.sign}。电荷球继续在内部移动，总和仍不变。` : `包住 ${clean(fraction * 100, 0)}% 电荷 → 总通量约为 ${clean(total / UNIT)}。假想面不会挡住红球。`;
     $('#flux-summary').textContent = state.step === 1 ? '下一步把电荷移进去，观察“包住多少电荷”与“总通量”之间的关系。' : '这里的高斯定理说：完整闭合面的总通量，等于它包住的净电荷除以 ε₀。它给的是整个面的总和，不能单凭总和判断某个位置的场强。';
-    const expected = state.challenge ? MYSTERIES[state.mystery].net * UNIT : fraction * UNIT;
+    const expected = state.challenge ? MYSTERIES[state.mystery].net * UNIT : fraction * UNIT * state.sign;
     $('#flux-numerics').dataset.total = `表面积分：${total.toExponential(5)} V·m；Q内/ε₀：${expected.toExponential(5)} V·m；两者差：${Math.abs(total - expected).toExponential(2)} V·m。`;
-    showPatch();
+    showPatch();scene.layer('selected').visible=false;
+    buildSelectedLine(fraction,total);
     if (state.challenge) updateMystery();
-  }
-  function stopJourney(restoreView = true) {
-    if (!journey.active) return;
-    journey.active = false; journey.playing = false; journey.eye = null;
-    $('.flux-experience').classList.remove('flux-following');
-    $('#flux-journey-controls').hidden = true; $('#flux-journey-hud').hidden = true;
-    $('#flux-journey-start').hidden = false;
-    for (const name of ['field-flow', 'field-glyphs', 'field-crossings', 'surface-arrows', 'source-guide']) scene.layer(name).visible = true;
-    scene.layer('field-flow').children.forEach(object => { object.material.opacity = state.surfaceVisible ? 0.35 : 0.5; });
-    scene.layer('selected').visible = state.surfaceVisible;
-    scene.clearLayer('journey');
-    scene.controls.enabled = true; scene.controls.enableDamping = true; scene.controls.minDistance = 5;
-    scene.grid.visible = true; scene.layer('axes').visible = true;
-    scene.layer('surface').children.forEach(object => { object.material.opacity = 0.28; });
-    scene.camera.near = 0.1; delete $('.stage').dataset.journeyCamera;
-    delete $('.stage').dataset.journeyPhase; fitViewport();
-    const copy = STEPS[state.step - 1]; $('#flux-step-title').textContent = copy.title; $('#flux-step-text').textContent = copy.text;
-    if (restoreView) { rebuild(); setView('iso', false); }
-  }
-  function chooseJourneyView(view) {
-    journey.view = view;
-    scene.cameraMove = null;
-    scene.controls.enabled = view === 'overview'; scene.controls.enableDamping = view === 'overview';
-    scene.controls.minDistance = view === 'follow' ? 0.01 : 5;
-    scene.camera.near = view === 'follow' ? 0.015 : 0.1;
-    $('.stage').dataset.journeyCamera = view; fitViewport();
-    scene.layer('journey').children.forEach(object => { if (object.userData.journeyOverviewOnly) object.visible = view === 'overview'; });
-    scene.layer('surface').children.forEach(object => { object.material.opacity = view === 'follow' ? 0.09 : 0.22; });
-    if (view === 'overview') { scene.camera.position.set(-6.5, 4.5, 10.7); scene.controls.target.set(-0.5, 0, 0); scene.controls.update(); }
-    container.querySelectorAll('button[data-journey-view]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.journeyView === view)));
-    updateJourney();
-  }
-  function startJourney() {
-    const mode = journey.mode;
-    setStep(2); stopPlay();
-    state.x = mode === 'outside' ? -3.7 : 0; $('#flux-source-x').value = state.x;
-    rebuild();
-    journey.plan = buildFluxJourney(source.pos, SOURCE_RADIUS, [state.a, R, R]);
-    journey.progress = 0; journey.active = true; journey.playing = !motionPreference.matches;
-    $('.flux-experience').classList.add('flux-following');
-    $('#flux-journey-controls').hidden = false; $('#flux-journey-hud').hidden = false; $('#flux-journey-start').hidden = true;
-    for (const name of ['field-flow', 'field-glyphs', 'field-crossings', 'surface-arrows', 'selected', 'source-guide']) scene.layer(name).visible = false;
-    scene.layer('field-flow').visible = true;
-    scene.layer('field-flow').children.forEach(object => { object.material.opacity = 0.12; });
-    scene.grid.visible = false; scene.layer('axes').visible = false;
-    $('#flux-step-title').textContent = mode === 'outside' ? '外部源：一进，一出' : '内部正源：从里面向外';
-    $('#flux-step-text').textContent = mode === 'outside' ? '选中的是一条确实穿面的场线。它不会在没有电荷的内部凭空开始或终止；其他未相交的场线无需计入。' : '这条场线从内部正电荷出发，向外穿出一次。内部负电荷则相反：场线向内终止。';
-    $('#flux-scene-title').textContent = '沿一条真实场线移动视角';
-    $('#flux-scene-pill').textContent = '不是电子轨迹 · 观察速度任意';
-    $('#flux-status').textContent = mode === 'outside' ? '一进一出帮助理解外部源为何不改变净通量。总通量仍由整个面上 E·n 的面积积分求得，不是直接数这条线。' : '这里包住了正电荷，净通量为正。单条场线提示方向，精确数值仍来自整个面的面积积分。';
-    const plan = journey.plan, at = t => plan.origin.map((value, i) => value + plan.direction[i] * t);
-    scene.line([at(plan.start), at(plan.end)], '#fff1bd', 'journey', 0.95);
-    for (const hit of plan.crossings) {
-      const marker = new THREE.Mesh(new THREE.SphereGeometry(0.09, 16, 12), new THREE.MeshBasicMaterial({ color: hit.sign < 0 ? '#7cdbff' : '#ffd07b' }));
-      marker.position.set(...hit.point); marker.userData.journeyOverviewOnly = true; scene.layer('journey').add(marker);
-      scene.label(hit.sign < 0 ? '穿入 −' : '穿出 +', [hit.point[0], hit.point[1] + 0.32, hit.point[2]], hit.sign < 0 ? '#7cdbff' : '#ffd07b', 'journey', 0.24).userData.journeyOverviewOnly = true;
-    }
-    journey.eye = new THREE.Mesh(new THREE.SphereGeometry(0.07, 14, 10), new THREE.MeshBasicMaterial({ color: '#fff6cd' }));
-    scene.layer('journey').add(journey.eye);
-    const mapPoint = p => [140 + p[0] * 26, 65 - p[1] * 26];
-    $('#flux-map-surface').setAttribute('cx', '140'); $('#flux-map-surface').setAttribute('rx', String(state.a * 26)); $('#flux-map-surface').setAttribute('ry', String(R * 26));
-    $('#flux-map-line').setAttribute('d', `M${mapPoint(at(plan.start)).join(',')} L${mapPoint(at(plan.end)).join(',')}`);
-    const sourceMap = mapPoint(source.pos); $('#flux-map-source').setAttribute('cx', sourceMap[0]); $('#flux-map-source').setAttribute('cy', sourceMap[1]);
-    $('#flux-map-crossings').innerHTML = plan.crossings.map(hit => { const [cx, cy] = mapPoint(hit.point); return `<circle cx="${cx}" cy="${cy}" r="3" fill="${hit.sign < 0 ? '#7cdbff' : '#ffd07b'}"/>`; }).join('');
-    chooseJourneyView('follow');
-    $('.flux-journey-bar').scrollIntoView({ block: 'start', behavior: 'instant' });
-  }
-  function updateJourney() {
-    if (!journey.active) return;
-    const sample = journeySample(journey.plan, journey.progress);
-    const titles = { before: '尚未进入', enter: '穿入：这一处记负', inside: '正在面内', exit: '穿出：这一处记正', after: '已到面外' };
-    const copies = { before: '顺着电场向前，先接近蓝色交点。', enter: '此处电场指向面内，与向外法线反向。', inside: journey.mode === 'outside' ? '场线继续向前，内部没有它的起点或终点。' : '场线从内部正电荷发出，继续向外。', exit: '此处电场指向面外，与向外法线同侧。', after: journey.mode === 'outside' ? '同一条线完成一进一出。不是每条外部场线都经过这个面。' : '从内部出发，只向外穿出一次。' };
-    $('#flux-journey-phase-label').textContent = journey.view === 'follow' ? '第一视角 · 沿电场方向' : '全景 · 亮点是观察位置';
-    $('#flux-journey-phase-title').textContent = titles[sample.phase];
-    $('#flux-journey-phase-copy').textContent = copies[sample.phase];
-    $('#flux-journey-in').textContent = `穿入 ${sample.entered ? 1 : 0} 次`;
-    $('#flux-journey-out').textContent = `穿出 ${sample.exited ? 1 : 0} 次`;
-    $('#flux-journey-progress').value = journey.progress;
-    $('#flux-journey-pause').textContent = journey.playing ? '暂停' : journey.progress === 1 ? '已完成' : '继续';
-    $('#flux-journey-pause').disabled = journey.progress === 1;
-    $('#flux-map-eye').setAttribute('cx', 140 + sample.point[0] * 26); $('#flux-map-eye').setAttribute('cy', 65 - sample.point[1] * 26);
-    $('.stage').dataset.journeyPhase = sample.phase;
-    journey.eye.position.set(...sample.point); journey.eye.visible = journey.view === 'overview';
-    // The eye sits on the actual field line. OrbitControls needs a short positive
-    // target distance here; its usual 5 mm minimum would push the eye off the path.
-    if (journey.view === 'follow') {
-      scene.camera.position.set(...sample.point);
-      scene.controls.target.set(...sample.point.map((value, i) => value + journey.plan.direction[i] * 2));
-      scene.camera.lookAt(scene.controls.target);
-    }
   }
   function stopPlay() { cancelAnimationFrame(playFrame); playing = false; $('#flux-play').textContent = '看它移进去'; }
   function schedule() { cancelAnimationFrame(pending); pending = requestAnimationFrame(rebuild); }
   function setStep(step) {
-    stopJourney(false);
-    stopPlay(); state.challenge = false; state.step = step; state.x = step === 3 ? 0 : -3.7; state.a = R; state.surfaceVisible = step !== 1;
+    stopPlay(); state.challenge = false; state.step = step; state.x = step === 3 ? 0 : -3.7; state.a = R; state.surfaceVisible = true;
     selected = { u: 1 / NU, phi: Math.PI + Math.PI / NP };
     const copy = STEPS[step - 1]; $('#flux-step-label').textContent = `第 ${step} 步 / 共 3 步`; $('#flux-step-title').textContent = copy.title; $('#flux-step-text').textContent = copy.text;
     $('#flux-add-surface').hidden = step !== 1; $('#flux-add-surface').textContent = '显示包围面';
@@ -406,9 +310,9 @@ export function mountFlux(container) {
     $('#flux-challenge-controls').hidden = true; $('#flux-charge-meter').hidden = false; $('.flux-advanced').hidden = false; $('#flux-reset').hidden = false;
     $('#flux-unit-note').textContent = '通量以 Q₀/ε₀ 为 1 个单位。不是数亮点，数值由电场与面积相加得到。';
     $('#flux-source-x').value = state.x; $('#flux-shape').value = state.a; $('#flux-shape-label').textContent = '圆球';
-    $('#flux-next').hidden = step === 3; $('#flux-next').textContent = step === 1 ? '下一步：移入电荷 →' : '下一步：改变外形 →';
+    $('#flux-next').hidden = true; $('#flux-next').textContent = step === 1 ? '下一步：移入电荷 →' : '下一步：改变外形 →';
     container.querySelectorAll('[data-flux-step]').forEach(button => button.setAttribute('aria-pressed', String(Number(button.dataset.fluxStep) === step)));
-    rebuild(); setView('iso');
+    rebuild(); setView('front');
   }
   function updateMystery() {
     $('#flux-scene-title').textContent = '只从外面测量，推断内部';
@@ -428,7 +332,6 @@ export function mountFlux(container) {
     $('#flux-surface-note').textContent = '隐藏仅影响显示 · 电场仍由真实源计算';
   }
   function startMystery(next = false) {
-    stopJourney(false);
     stopPlay();
     if (next) state.mystery = (state.mystery + 1) % MYSTERIES.length;
     Object.assign(state, { challenge: true, surfaceVisible: true, measured: false, revealed: false, a: R, x: 0 });
@@ -436,7 +339,7 @@ export function mountFlux(container) {
     for (const id of ['flux-add-surface', 'flux-patch-controls', 'flux-move-controls', 'flux-shape-controls', 'flux-next', 'flux-reset']) $(`#${id}`).hidden = true;
     $('#flux-challenge-controls').hidden = false;
     container.querySelectorAll('[data-flux-step]').forEach(button => button.setAttribute('aria-pressed', 'false'));
-    rebuild(); setView('iso');
+    rebuild(); setView('front');
     $('.flux-steps').scrollIntoView({ behavior: 'instant', block: 'start' });
   }
   container.querySelectorAll('[data-flux-step]').forEach(button => button.addEventListener('click', () => setStep(Number(button.dataset.fluxStep))));
@@ -452,22 +355,21 @@ export function mountFlux(container) {
     }
   });
   $('#flux-add-surface').addEventListener('click', () => {
-    stopJourney(false);
     state.surfaceVisible = !state.surfaceVisible;
     $('#flux-add-surface').textContent = state.surfaceVisible ? '暂时隐藏包围面' : '显示包围面';
     $('#flux-patch-controls').hidden = !state.surfaceVisible;
-    rebuild(); setView('iso');
+    rebuild(); setView('front');
   });
   $('#flux-flow-toggle').addEventListener('click', () => { state.flowMoving = !state.flowMoving; updateMotionButton(); });
-  const motionChanged = event => { if (event.matches) { state.flowMoving = false; journey.playing = false; stopPlay(); updateMotionButton(); updateJourney(); } };
+  const motionChanged = event => { if (event.matches) { state.flowMoving = false; stopPlay(); updateMotionButton(); } };
   motionPreference.addEventListener('change', motionChanged);
   $('#flux-start-mystery').addEventListener('click', () => startMystery());
   $('#flux-new-mystery').addEventListener('click', () => startMystery(true));
-  $('#flux-exit-mystery').addEventListener('click', () => setStep(1));
+  $('#flux-exit-mystery').addEventListener('click', () => setStep(2));
   $('#flux-measure').addEventListener('click', () => { state.measured = true; updateMystery(); });
   $('#flux-reveal').addEventListener('click', () => { state.revealed = true; rebuild(); });
-  $('#flux-source-x').addEventListener('input', () => { stopJourney(); stopPlay(); state.x = Number($('#flux-source-x').value); schedule(); });
-  $('#flux-shape').addEventListener('input', () => { stopJourney(); state.a = Number($('#flux-shape').value); $('#flux-shape-label').textContent = Math.abs(state.a - R) < 0.08 ? '接近圆球' : state.a < R ? '左右压扁' : '左右拉长'; schedule(); });
+  $('#flux-source-x').addEventListener('input', () => { stopPlay(); state.x = Number($('#flux-source-x').value); schedule(); });
+  $('#flux-shape').addEventListener('input', () => { state.a = Number($('#flux-shape').value); $('#flux-shape-label').textContent = Math.abs(state.a - R) < 0.08 ? '接近圆球' : state.a < R ? '左右压扁' : '左右拉长'; schedule(); });
   $('#flux-play').addEventListener('click', () => {
     if (playing) { stopPlay(); return; }
     state.x = -3.7; playing = true; $('#flux-play').textContent = '暂停'; const start = performance.now(); let previous = -Infinity;
@@ -481,17 +383,27 @@ export function mountFlux(container) {
   });
   $('#flux-next').addEventListener('click', () => setStep(Math.min(3, state.step + 1)));
   $('#flux-reset').addEventListener('click', () => { setView('iso'); setStep(state.step); });
-  container.querySelectorAll('[data-journey-source]').forEach(button => button.addEventListener('click', () => {
-    journey.mode = button.dataset.journeySource;
-    container.querySelectorAll('[data-journey-source]').forEach(item => item.setAttribute('aria-pressed', String(item === button)));
-    if (journey.active) startJourney();
-  }));
-  container.querySelectorAll('button[data-journey-view]').forEach(button => button.addEventListener('click', () => chooseJourneyView(button.dataset.journeyView)));
-  $('#flux-journey-start').addEventListener('click', startJourney);
-  $('#flux-journey-close').addEventListener('click', () => stopJourney());
-  $('#flux-journey-pause').addEventListener('click', () => { journey.playing = !journey.playing; updateJourney(); });
-  $('#flux-journey-replay').addEventListener('click', () => { journey.progress = 0; journey.playing = true; updateJourney(); });
-  $('#flux-journey-progress').addEventListener('input', () => { journey.playing = false; journey.progress = Number($('#flux-journey-progress').value); updateJourney(); });
-  setView('iso', false); setStep(1);
-  return () => { disposed = true; cancelAnimationFrame(pending); cancelAnimationFrame(playFrame); viewportObserver.disconnect(); motionPreference.removeEventListener('change', motionChanged); scene.dispose(); container.innerHTML = ''; };
+  container.querySelectorAll('[data-flux-placement]').forEach(button=>button.addEventListener('click',()=>{setStep(2);state.x=button.dataset.fluxPlacement==='inside'?0:-3.7;$('#flux-source-x').value=state.x;rebuild();}));
+  container.querySelectorAll('[data-flux-sign]').forEach(button=>button.addEventListener('click',()=>{state.sign=Number(button.dataset.fluxSign);container.querySelectorAll('[data-flux-sign]').forEach(item=>item.setAttribute('aria-pressed',String(item===button)));rebuild();}));
+  const canvas=scene.renderer.domElement, dragRay=new THREE.Raycaster(), dragPlane=new THREE.Plane(new THREE.Vector3(0,0,1),0);
+  let draggingSource=false,dragOffset=0,lastDragRebuild=0;
+  function pointerRay(event){const rect=canvas.getBoundingClientRect();dragRay.setFromCamera(new THREE.Vector2((event.clientX-rect.left)/rect.width*2-1,-(event.clientY-rect.top)/rect.height*2+1),scene.camera);}
+  function dragStart(event){
+    if(state.challenge||state.step===3||event.button>0)return;
+    const normal=scene.camera.getWorldDirection(new THREE.Vector3());normal.x=0;if(normal.lengthSq()<1e-8)return;dragPlane.setFromNormalAndCoplanarPoint(normal.normalize(),new THREE.Vector3());
+    pointerRay(event);const hit=dragRay.intersectObjects(scene.layer('charges').children,true).find(hit=>hit.object.userData.source);
+    if(!hit)return;const point=new THREE.Vector3();if(!dragRay.ray.intersectPlane(dragPlane,point))return;
+    stopPlay();scene.cameraMove=null;draggingSource=true;dragOffset=state.x-point.x;scene.controls.enabled=false;
+    canvas.setPointerCapture(event.pointerId);canvas.style.cursor='grabbing';event.preventDefault();event.stopImmediatePropagation();
+  }
+  function dragMove(event){
+    if(!draggingSource)return;pointerRay(event);const point=new THREE.Vector3();if(!dragRay.ray.intersectPlane(dragPlane,point))return;
+    state.x=Math.max(-3.7,Math.min(3.7,point.x+dragOffset));$('#flux-source-x').value=state.x;
+    if(performance.now()-lastDragRebuild>35){rebuild();lastDragRebuild=performance.now();}
+    event.preventDefault();event.stopImmediatePropagation();
+  }
+  function dragEnd(event){if(!draggingSource)return;draggingSource=false;canvas.releasePointerCapture?.(event.pointerId);canvas.style.cursor='grab';scene.controls.enabled=true;rebuild();event.preventDefault();event.stopImmediatePropagation();}
+  canvas.addEventListener('pointerdown',dragStart,true);canvas.addEventListener('pointermove',dragMove,true);canvas.addEventListener('pointerup',dragEnd,true);canvas.addEventListener('pointercancel',dragEnd,true);
+  setView('front', false); setStep(2);
+  return () => { disposed = true; cancelAnimationFrame(pending); cancelAnimationFrame(playFrame); canvas.removeEventListener('pointerdown',dragStart,true);canvas.removeEventListener('pointermove',dragMove,true);canvas.removeEventListener('pointerup',dragEnd,true);canvas.removeEventListener('pointercancel',dragEnd,true);viewportObserver.disconnect(); motionPreference.removeEventListener('change', motionChanged); scene.dispose(); container.innerHTML = ''; };
 }

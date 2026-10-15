@@ -19,7 +19,7 @@ document.querySelector('#app').innerHTML=`<header class="topbar"><a href="index.
 const container=document.querySelector('#experience');
 try{
  let dispose;
- if(key==='beam')dispose=(await import('./beam-page.js')).mountBeam(container);
+ if(key==='beam'){const hero=document.createElement('div');hero.id='home-oscillation';document.querySelector('.page-intro').before(hero);const disposeHero=(await import('./home-field.js')).mountHomeField(hero);const disposeBeam=(await import('./beam-page.js')).mountBeam(container);dispose=()=>{disposeHero();disposeBeam?.()};}
  if(key==='engine')dispose=(await import('./engine-page.js')).mountEngine(container);
  if(key==='particle')dispose=(await import('./particle-page.js')).mountParticle(container);
  if(key==='field')dispose=(await import('./field-page.js')).mountField(container);

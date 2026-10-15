@@ -33,10 +33,16 @@ var js_callback: JavaScriptObject
 var window: JavaScriptObject
 var paused := false
 var soft_texture: ImageTexture
+var attention_meshes: Array[MeshInstance3D]=[]
+var attention_material: StandardMaterial3D
+var attention_anchor:=Vector3.ZERO
+var attention_label:=""
+var attention_tick:=0.0
 
 func _ready() -> void:
 	_build_environment()
 	_build_soft_texture()
+	attention_material=_material(Color(0.38,0.84,0.93,0.20),0,0.5,true)
 	if OS.has_feature("web"):
 		window = JavaScriptBridge.get_interface("window")
 		paused = bool(JavaScriptBridge.eval("matchMedia('(prefers-reduced-motion: reduce)').matches"))
@@ -63,7 +69,7 @@ func _receive_js(args: Array) -> void:
 	if data.get("type","") == "view-gap":
 		target=(spark_a+spark_b)/2;distance=1.9 if case_id=="desmoines" else 3.4;yaw=.5;pitch=.28;_update_camera();return
 	if data.get("type","") == "cutaway":
-		cutaway = bool(data.get("enabled",true)); _apply_model_visibility(); _notify_hud(); return
+		cutaway = bool(data.get("enabled",true)); _apply_model_visibility(); _update_attention(); _notify_hud(); return
 	if data.get("type","") == "pause-visuals":
 		paused=bool(data.get("paused",false));return
 	if data.get("type","") == "electrostatic-field":
@@ -110,6 +116,7 @@ func _material(color: Color, metallic: float=0, roughness: float=0.5, emissive: 
 	return m
 
 func _load_case(id: String) -> void:
+	_clear_attention()
 	case_id=id;current["caseId"]=id;phase=0;current["step"]=0;state_time=0
 	if field_lab:
 		field_lab.queue_free();field_lab=null
@@ -121,7 +128,7 @@ func _load_case(id: String) -> void:
 			if light is DirectionalLight3D: light.visible=false
 		field_lab=load("res://FieldLab.gd").new();add_child(field_lab)
 		field_lab.connect("reading_changed",_field_reading)
-		_field_reading(field_lab.call("get_reading"));_notify_hud();return
+		_field_reading(field_lab.call("get_reading"));_notify_hud();_publish_attention();return
 	stage.visible=true;camera.current=true
 	for light in get_children():
 		if light is DirectionalLight3D: light.visible=true
@@ -203,6 +210,7 @@ func _apply_state() -> void:
 	var ignited:=phase==3 and _can_spark()
 	for flame in flames: flame.visible=ignited
 	for cloud in smoke: cloud.visible=ignited
+	_update_attention()
 	_notify_hud()
 
 func _build_soft_texture() -> void:
@@ -261,6 +269,11 @@ func _process(delta: float) -> void:
 	if case_id=="field": return
 	if not paused: time+=delta;state_time+=delta
 	_update_camera()
+	if attention_material:
+		attention_material.albedo_color.a=0.19 if paused else 0.18+0.045*sin(time*TAU/3.6)
+	attention_tick+=delta
+	if attention_tick>0.05:
+		attention_tick=0;_publish_attention()
 	var liquid_visible:=case_id!="glenpool" or phase>=2
 	for i in range(droplets.size()):
 		var f:=fposmod(time*.62+float(i)/droplets.size(),1)
@@ -294,6 +307,47 @@ func _process(delta: float) -> void:
 		smoke[i].scale=Vector3.ONE*(.5+f*1.7)
 	lightning.visible=_can_spark() and (phase==2 or state_time<0.45)
 	glow.light_energy=(.6+sin(time*7)*.08) if ignited else .035 if lightning.visible else 0
+
+func _clear_attention()->void:
+	for mesh in attention_meshes:
+		if is_instance_valid(mesh): mesh.material_overlay=null
+	attention_meshes.clear()
+
+func _update_attention()->void:
+	_clear_attention()
+	if not model or case_id=="field": return
+	var prefixes: Array=[]
+	if case_id=="desmoines":
+		prefixes=[["nozzle","hose"],["nozzle","counterweight"],["counterweight","container_shell"],["counterweight"]][phase]
+		attention_label=["喷嘴 · 输送接触","孤立金属件 · 电荷积累","金属件与容器 · 电势差","间隙 · 可能的放电路径"][phase]
+	elif case_id=="valley":
+		prefixes=[["inlet","internal_fill_pipe"],["liquid","float"],["float_tape_terminal","float"],["float_tape_terminal"]][phase]
+		attention_label=["进液管 · 溶剂输送","液体与浮子 · 电荷难消散","浮子连接处 · 可能有电势差","连接间隙 · 可能的放电路径"][phase]
+	else:
+		prefixes=[["liquid"],["tank_shell"],["internal_fill_pipe","liquid"],["liquid"]][phase]
+		attention_label=["汽油液面","罐内 · 残留可燃气氛","新灌入的液体 · 电荷积累","液面附近 · 可能的点火区域"][phase]
+	if bool(current.get("bonded",false)) and case_id!="glenpool" and phase>=1:
+		prefixes=["bonding_wire","bonding_clamp"]
+		attention_label="跨接导线 · 电荷重新分布"
+	var first_anchor:=true
+	for prefix in prefixes:
+		for node in model.find_children("*","MeshInstance3D",true,false):
+			if not str(node.name).begins_with(str(prefix)) or not node.is_visible_in_tree(): continue
+			if node in attention_meshes: continue
+			node.material_overlay=attention_material;attention_meshes.append(node)
+			if first_anchor:
+				attention_anchor=node.global_transform*(node.get_aabb().position+node.get_aabb().size*.5);first_anchor=false
+	if phase>=2 and not bool(current.get("bonded",false)): attention_anchor=(spark_a+spark_b)*.5
+	_publish_attention()
+
+func _publish_attention()->void:
+	if not OS.has_feature("web"): return
+	if case_id=="field":
+		JavaScriptBridge.eval("window.updateCaseCue?.({visible:false})",true);return
+	var screen:=camera.unproject_position(attention_anchor)
+	var size:=get_viewport().get_visible_rect().size
+	var payload:={"x":screen.x/maxf(1,size.x),"y":screen.y/maxf(1,size.y),"visible":not camera.is_position_behind(attention_anchor),"label":attention_label}
+	JavaScriptBridge.eval("window.updateCaseCue?.("+JSON.stringify(payload)+")",true)
 
 func _field_reading(data: Dictionary) -> void:
 	var payload:=data.duplicate();payload["type"]="field-reading"
