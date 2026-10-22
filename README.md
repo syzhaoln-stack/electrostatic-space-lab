@@ -1,3 +1,6 @@
+<!-- CURRENT-PROJECT-20261022 -->
+> 此仓库保留早期版本。**[当前教材请从这里进入](https://syzhaoln-stack.github.io/electrostatics-course/)**。
+
 # 静电场 · 空间实验室
 
 大学物理 JC05 交互课程样板。第六版增加场景中的直接操作目标：瞄准自由靶、壁面收集、拖点找受力方向；等势面用局部法向与切向方向圈展示不做功的移动。本地运行并通过 GitHub Pages 分享。
